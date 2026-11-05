@@ -20,7 +20,7 @@ const timed = <T,>(fn: () => T): [T, number] => {
   return [v, Math.round(performance.now() - t)];
 };
 const rows: Record<string, unknown>[] = [];
-// Runs headless in Bun. Browser Worker timings are recorded separately in docs/reports/browser-run.md.
+// Runs headless in Bun. Browser Worker timings are recorded separately in docs/QUALITY.md.
 for (const quality of ['preview', 'standard', 'high'] as Quality[]) {
   const sk = buildSkeleton('regular');
   const [g, buildMs] = timed(() => buildGarment(DEFAULT_PARAMS, quality, sk));

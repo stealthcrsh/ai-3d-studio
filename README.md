@@ -41,7 +41,7 @@ Edit commands such as "make the sleeves 3 cm shorter" show which parts change be
 
 | Area | Status | What that means |
 |---|---|---|
-| 3D geometry, seams, UVs, textures | **Works, tested** | Real mesh with 12 named parts and 16 to 18 structural seams, depending on parts present |
+| 3D geometry, seams, UVs, textures | **Works, tested** | Real mesh with up to 12 named parts and 18 structural seams |
 | Cloth simulation | **Works, tested** | XPBD solver with gravity, stretch, bend, avatar collision and particle self-collision. Baked ahead of time in a Web Worker, then played back |
 | Image reading | **Baseline, tested on synthetic images only** | Classical outline measurement. Not tested on real photographs |
 | "AI" generation | **Not connected** | Output is a template fitted to measurements, labelled DEMO BASELINE everywhere |

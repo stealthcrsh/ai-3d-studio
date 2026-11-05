@@ -47,7 +47,7 @@ export class MapStorage implements Storage {
 
 /**
  * Runs stages in the test process. A kill takes effect at the next progress report, which approximates
- * Worker.terminate(). Real Worker termination is exercised in the browser run, see docs/reports/browser-run.md.
+ * Worker.terminate(). Real Worker termination is exercised in the browser run, see docs/QUALITY.md.
  */
 export class InlineRunner implements StageRunner {
   /** Set to a stage name to hold that stage open until the test releases it. */
