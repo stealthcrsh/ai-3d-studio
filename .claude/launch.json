@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "studio", "runtimeExecutable": "bun", "runtimeArgs": ["run", "src/server/index.ts"], "port": 8787 }
+  ]
+}
