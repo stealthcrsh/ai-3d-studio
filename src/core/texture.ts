@@ -1,7 +1,7 @@
-import type { Garment, PartMesh } from '../core/garment.ts';
-import { FABRICS } from '../core/params.ts';
-import { mulberry32 } from '../core/math.ts';
-import { encodeJpeg, type ImageAnalysis, type RGBAImage } from './vision.ts';
+import type { Garment, PartMesh } from './garment.ts';
+import { FABRICS } from './params.ts';
+import { mulberry32 } from './math.ts';
+import type { ImageAnalysis, RGBAImage } from './vision.ts';
 
 export interface PhotoSource {
   image: RGBAImage;
@@ -86,8 +86,8 @@ function lowFrequencyLuma(p: PhotoSource) {
 }
 
 export interface BakedTextures {
-  baseColor: Uint8Array;
-  normal: Uint8Array;
+  baseColor: RGBAImage;
+  normal: RGBAImage;
   size: number;
   /** Which image informed each part, so the UI can tag inferred surfaces truthfully. */
   sources: Record<string, 'reference-front' | 'reference-back' | 'inferred-colour'>;
@@ -232,10 +232,9 @@ export function bakeTextures(g: Garment, size: number, sources: BakeSources): Ba
       }
   };
   for (const p of g.parts) bakePart(p);
-  const q = size > 2048 ? 82 : 88;
   return {
-    baseColor: encodeJpeg({ width: size, height: size, data: color }, q),
-    normal: encodeJpeg({ width: size, height: size, data: normal }, q),
+    baseColor: { width: size, height: size, data: color },
+    normal: { width: size, height: size, data: normal },
     size,
     sources: provenance,
   };

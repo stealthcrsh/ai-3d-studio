@@ -381,6 +381,9 @@ export function buildGarment(params: HoodieParams, quality: Quality, sk: Skeleto
       } else edgeMap.set(k, { rest: d, n: 1, stiff, opp: [ox] });
     }
   };
+  // At the hood's crown corner, three of the four quad vertices lie on the seam shared with the other half.
+  // This diagonal keeps a triangle from sitting entirely on that seam, where the two halves would duplicate it.
+  const isHoodCorner = (p: RawPanel, i: number, j: number) => p.part.startsWith('Hood') && i === p.rows - 1 && j === p.cols - 1;
   for (const p of panels) {
     const stiff = p.material === 'rib' ? 0.35 : 1;
     for (let i = 0; i < p.rows; i++)
@@ -389,7 +392,7 @@ export function buildGarment(params: HoodieParams, quality: Quality, sk: Skeleto
         const b = id(p, i, j + 1);
         const c = id(p, i + 1, j + 1);
         const d = id(p, i + 1, j);
-        const alt = (i + j) % 2 === 0;
+        const alt = (i + j) % 2 === 0 || isHoodCorner(p, i, j);
         const tris = alt ? [[a, b, c], [a, c, d]] : [[a, b, d], [b, c, d]];
         for (const [x, y, z] of tris) (p.flip ? addTri(x, z, y, stiff) : addTri(x, y, z, stiff));
       }
@@ -453,7 +456,7 @@ export function buildGarment(params: HoodieParams, quality: Quality, sk: Skeleto
       for (let j = 0; j < p.cols; j++) {
         const q = (a: number, b: number) => a * (p.cols + 1) + b;
         const [a, b, c, d] = [q(i, j), q(i, j + 1), q(i + 1, j + 1), q(i + 1, j)];
-        const alt = (i + j) % 2 === 0;
+        const alt = (i + j) % 2 === 0 || isHoodCorner(p, i, j);
         const t = alt ? [a, b, c, a, c, d] : [a, b, d, b, c, d];
         if (p.flip) for (let n = 0; n < t.length; n += 3) tris.push(t[n], t[n + 2], t[n + 1]);
         else tris.push(...t);

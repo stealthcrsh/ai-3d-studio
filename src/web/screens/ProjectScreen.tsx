@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, fileUrl, type Health, type Job, type ProjectFull, type Version } from '../api.ts';
+import { api, files, type Health, type Job, type ProjectFull, type Version } from '../api.ts';
 import { navigate, onLiveEvent } from '../App.tsx';
 import { Viewport, type CameraView, type SceneMeta, type ViewMode } from '../viewport.ts';
 import { ImportScreen, SetupScreen } from './Intake.tsx';
@@ -18,12 +18,17 @@ const TABS = [
 const VIEW_MODES: [ViewMode, string][] = [['material', 'Material'], ['clay', 'Clay'], ['wire', 'Wire'], ['parts', 'Parts'], ['stretch', 'Stretch'], ['collision', 'Contact']];
 const CAMERAS: [CameraView, string, string][] = [['front', 'Front', '1'], ['back', 'Back', '2'], ['left', 'Left', '3'], ['right', 'Right', '4'], ['reset', 'Reset', 'R']];
 
-export function ProjectScreen({ id, tab, health }: { id: string; tab: string | null; health: Health | null }) {
+export function ProjectScreen({ id, tab, health }: { id: string; tab: string | null; health: Health }) {
   const [project, setProject] = useState<ProjectFull | null>(null);
   const [missing, setMissing] = useState(false);
   const [liveJob, setLiveJob] = useState<Job | null>(null);
+  const latest = useRef(0);
   const reload = useCallback(() => {
-    api.get(id).then(setProject).catch((e) => {
+    // Only the newest read may update the screen, so a slow older read cannot overwrite fresher state.
+    const ticket = ++latest.current;
+    api.get(id).then((p) => {
+      if (ticket === latest.current) setProject(p);
+    }).catch((e) => {
       if (/not found/i.test(e.message)) setMissing(true);
     });
   }, [id]);
@@ -47,7 +52,9 @@ export function ProjectScreen({ id, tab, health }: { id: string; tab: string | n
   const current = tab ?? (project.versions.length ? 'studio' : 'import');
   const hasVersion = project.versions.length > 0;
   const version = project.versions.find((v) => v.id === project.currentVersionId) ?? null;
-  const job = (liveJob && project.jobs.some((j) => j.id === liveJob.id) ? liveJob : null) ?? project.jobs[0] ?? null;
+  const saved = project.jobs[0] ?? null;
+  // The live event is the freshest view of a running job. A saved record wins only if it is a newer job.
+  const job = liveJob && (!saved || liveJob.createdAt >= saved.createdAt) ? liveJob : saved;
 
   return (
     <div className="shell">
@@ -77,7 +84,7 @@ export function ProjectScreen({ id, tab, health }: { id: string; tab: string | n
   );
 }
 
-function Workspace({ project, version, tab, job, reload, health }: { project: ProjectFull; version: Version | null; tab: string; job: Job | null; reload: () => void; health: Health | null }) {
+function Workspace({ project, version, tab, job, reload, health }: { project: ProjectFull; version: Version | null; tab: string; job: Job | null; reload: () => void; health: Health }) {
   const host = useRef<HTMLDivElement>(null);
   const vpRef = useRef<Viewport | null>(null);
   const [mode, setMode] = useState<ViewMode>('material');
@@ -116,10 +123,12 @@ function Workspace({ project, version, tab, job, reload, health }: { project: Pr
     setLoadError(null);
     (async () => {
       try {
-        const meta = await (await fetch(fileUrl(project.id, sceneFile))).json();
+        const meta = await files.json<SceneMeta>(project.id, sceneFile);
+        const heat = version?.artifacts.heat ? await files.floats(project.id, version.artifacts.heat) : null;
         if (stop) return;
-        const heat = version?.artifacts.heat ? fileUrl(project.id, version.artifacts.heat) : undefined;
-        const applied = await vp.loadModel(fileUrl(project.id, artifact), meta, heat);
+        const url = await files.url(project.id, artifact);
+        const applied = await vp.loadModel(url, meta, heat);
+        URL.revokeObjectURL(url);
         if (stop || !applied) return;
         setScene(meta);
         setLoadedKey(key);
@@ -174,10 +183,16 @@ function Workspace({ project, version, tab, job, reload, health }: { project: Pr
     const dir = version.artifacts.motion?.[next];
     if (!dir) return;
     setMotionState((m) => ({ ...m, loading: true }));
-    const meta = await vp.loadMotion(next, fileUrl(project.id, `${dir}/meta.json`), fileUrl(project.id, `${dir}/frames.bin`));
+    const meta = await files.json<{ fps: number; frames: number; vertices: number }>(project.id, `${dir}/meta.json`);
+    vp.loadMotion(next, meta, await files.floats(project.id, `${dir}/frames.bin`));
     setClip(next);
     setMotionState((m) => ({ ...m, loading: false, duration: meta.frames / meta.fps, frames: meta.frames, time: 0, frame: 0 }));
   }, [project.id, version]);
+
+  // Motion belongs to its tab. Every other screen inspects the static drape, so comparisons use a fair pose.
+  useEffect(() => {
+    if (tab !== 'motion' && clip) void selectClip(null);
+  }, [tab, clip, selectClip]);
 
   const togglePlay = useCallback(() => {
     const vp = vpRef.current;
@@ -263,7 +278,10 @@ function Workspace({ project, version, tab, job, reload, health }: { project: Pr
               <div className="glass mono" style={{ fontSize: 11 }}>{mode === 'stretch' ? 'Blue 0% stretch, red 30% or more' : 'Blue clear of the body, red 6 mm or more inside'}. Measured on the static drape.</div>
             )}
           </div>
-          {loading && <div className="overlay-tr"><div className="glass">{loading}…</div></div>}
+          <div className="overlay-tr">
+            {loading && <div className="glass">{loading}…</div>}
+            {scene?.tier === 'draft' && running && <div className="glass" data-testid="draft-note"><span className="badge draft">DRAFT</span> Coarse mesh. You can orbit it while it refines.</div>}
+          </div>
           {!artifact && !running && !loading && (
             <div className="viewport-empty"><div><h2>No mesh for this version</h2><p>{job?.status === 'failed' ? 'The run failed before a mesh was ready. See the status panel.' : 'Run generation to create one.'}</p></div></div>
           )}

@@ -4,20 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run tools/dev.ts",
-    "server": "bun run src/server/index.ts",
-    "web": "vite",
+    "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "start": "vite build && bun run src/server/index.ts",
+    "preview": "vite preview",
     "fixtures": "bun run tools/make-fixtures.ts",
     "test": "bun test tests",
-    "smoke": "bun run tools/smoke.ts"
+    "benchmark": "bun run tools/benchmark.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
-    "jpeg-js": "^0.4.4",
-    "pngjs": "^7.0.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "three": "^0.187.0"
@@ -31,6 +27,8 @@
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.2.1",
     "gltf-validator": "^2.0.0-dev.3.10",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.6"
   }

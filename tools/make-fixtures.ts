@@ -4,7 +4,8 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { encodePng, encodeJpeg, type RGBAImage } from '../src/server/vision.ts';
+import type { RGBAImage } from '../src/core/vision.ts';
+import { nodeCodec } from '../tests/support.ts';
 
 const OUT = join(import.meta.dir, '..', 'fixtures');
 mkdirSync(OUT, { recursive: true });
@@ -75,24 +76,24 @@ function render(s: Spec): RGBAImage {
   return { width: w, height: h, data };
 }
 
-const save = (name: string, img: RGBAImage) => {
-  writeFileSync(join(OUT, name), name.endsWith('.jpg') ? encodeJpeg(img, 90) : encodePng(img));
+const save = async (name: string, img: RGBAImage) => {
+  writeFileSync(join(OUT, name), name.endsWith('.jpg') ? await nodeCodec.encodeJpeg(img, 0.9) : await nodeCodec.encodePng(img));
   console.log(name);
 };
 
 const STD: Spec = { w: 800, h: 900, bg: [238, 236, 230], base: [86, 104, 122], rib: [72, 88, 104], widthToLength: 0.92, sleeveToLength: 0.85 };
-save('hoodie_front.png', render(STD));
-save('hoodie_back.png', render({ ...STD, back: true }));
-save('hoodie_front.jpg', render(STD));
-save('hoodie_patterned_front.png', render({ ...STD, base: [36, 44, 74], rib: [28, 34, 58], pattern: 'stripes', widthToLength: 0.84, sleeveToLength: 0.9 }));
-save('hoodie_print_front.png', render({ ...STD, base: [46, 72, 58], rib: [38, 60, 48], pattern: 'chest-print', widthToLength: 1.02, sleeveToLength: 0.78 }));
-save('hoodie_contradict_back.png', render({ ...STD, base: [176, 48, 44], rib: [150, 40, 38], widthToLength: 0.62, back: true }));
-save('hoodie_busy_background.png', render({ ...STD, bg: [120, 130, 96], noisy: true }));
-save('tshirt_no_hood.png', render({ ...STD, noHood: true, sleeveToLength: 0.35 }));
+await save('hoodie_front.png', render(STD));
+await save('hoodie_back.png', render({ ...STD, back: true }));
+await save('hoodie_front.jpg', render(STD));
+await save('hoodie_patterned_front.png', render({ ...STD, base: [36, 44, 74], rib: [28, 34, 58], pattern: 'stripes', widthToLength: 0.84, sleeveToLength: 0.9 }));
+await save('hoodie_print_front.png', render({ ...STD, base: [46, 72, 58], rib: [38, 60, 48], pattern: 'chest-print', widthToLength: 1.02, sleeveToLength: 0.78 }));
+await save('hoodie_contradict_back.png', render({ ...STD, base: [176, 48, 44], rib: [150, 40, 38], widthToLength: 0.62, back: true }));
+await save('hoodie_busy_background.png', render({ ...STD, bg: [120, 130, 96], noisy: true }));
+await save('tshirt_no_hood.png', render({ ...STD, noHood: true, sleeveToLength: 0.35 }));
 const blank = new Uint8Array(400 * 400 * 4).fill(240);
-save('blank.png', { width: 400, height: 400, data: blank });
+await save('blank.png', { width: 400, height: 400, data: blank });
 // Damaged files, for rejection tests. The first bytes look valid but the body is garbage.
-const png = encodePng(render({ ...STD, w: 200, h: 220 }));
+const png = await nodeCodec.encodePng(render({ ...STD, w: 200, h: 220 }));
 writeFileSync(join(OUT, 'corrupt_truncated.png'), png.slice(0, Math.floor(png.length * 0.3)));
 writeFileSync(join(OUT, 'fake_image.png'), new TextEncoder().encode('this is not an image, only text renamed to .png'));
 // A tiny file whose header claims an enormous image, the shape of a decompression bomb.

@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, bytes, cm, fileUrl, type Health, type Project, type ProjectFull, type ReconstructionResult } from '../api.ts';
+import { api, bytes, cm, useFileUrl, type Health, type Project, type ProjectFull, type ReconstructionResult } from '../api.ts';
 import { navigate } from '../App.tsx';
 
 const FORMATS: [string, string, string][] = [
   ['PNG, JPEG', 'Front and back views are measured and projected onto the garment', 'Used'],
-  ['MP4, MOV video', 'Stored with the project', 'Stored only'],
-  ['PDF blueprint or CAD drawing', 'Stored with the project', 'Stored only'],
+  ['MP4, MOV video', 'Saved with the project, not used yet', 'Stored only'],
+  ['PDF blueprint or CAD drawing', 'Saved with the project, not used yet', 'Stored only'],
   ['GLB, OBJ 3D model', 'Stored and never opened', 'Stored only'],
-  ['TXT notes', 'Stored with the project', 'Stored only'],
+  ['TXT notes', 'Saved with the project, not used yet', 'Stored only'],
   ['WebP, HEIC, GIF', 'Convert to PNG or JPEG first', 'Rejected'],
 ];
 
-export function ImportScreen({ project, reload, health }: { project: ProjectFull; reload: () => void; health: Health | null }) {
+function StoredImg({ pid, rel, alt, className }: { pid: string; rel: string; alt: string; className?: string }) {
+  const url = useFileUrl(pid, rel);
+  return url ? <img src={url} alt={alt} className={className} /> : null;
+}
+
+export function ImportScreen({ project, reload, health }: { project: ProjectFull; reload: () => void; health: Health }) {
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -37,6 +42,13 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
     setBusy(false);
     reload();
   }, [project.id, reload]);
+
+  const useSample = async () => {
+    setBusy(true);
+    const names = ['hoodie_front.png', 'hoodie_back.png'];
+    const samples = await Promise.all(names.map(async (n) => new File([await (await fetch(`${import.meta.env.BASE_URL}samples/${n}`)).blob()], n, { type: 'image/png' })));
+    await upload(samples);
+  };
 
   const saveDetails = async () => {
     const measurements = Object.fromEntries(Object.entries(meas).filter(([, v]) => v).map(([k, v]) => [k, Number(v) / 100]));
@@ -65,6 +77,9 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
             <h2>{busy ? 'Checking and measuring files…' : 'Drop files here, or click to choose'}</h2>
             <p className="muted" style={{ marginTop: 4 }}>Up to {health?.catalog.uploads.maxFiles ?? 12} files, {Math.round((health?.catalog.uploads.maxBytes ?? 3e7) / 1e6 / 1.048)} MB each, 40 megapixels per image.</p>
           </label>
+          {project.references.length === 0 && !busy && (
+            <div className="row"><button className="btn" onClick={useSample}>Try the sample hoodie</button><span className="dim">Two synthetic images made for testing, not photographs.</span></div>
+          )}
           {errors.map((e) => <div key={e} className="notice bad" role="alert">{e}</div>)}
           {project.references.length > 0 && (
             <div className="thumbs">
@@ -74,8 +89,8 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
                 return (
                   <div className="thumb" key={r.id}>
                     <div className="pic">
-                      {image ? <img src={fileUrl(project.id, r.file)} alt={`${r.view} reference`} /> : <div className="viewport-empty mono">{r.kind.toUpperCase()}</div>}
-                      {a?.maskUrl && <img className="mask" src={fileUrl(project.id, a.maskUrl)} alt="" />}
+                      {image ? <StoredImg pid={project.id} rel={r.file} alt={`${r.view} reference`} /> : <div className="viewport-empty mono">{r.kind.toUpperCase()}</div>}
+                      {a?.maskUrl && <StoredImg pid={project.id} rel={a.maskUrl} alt="" className="mask" />}
                     </div>
                     <div className="body">
                       <div className="row between"><span className="mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.filename}>{r.filename}</span><button className="icon-btn" aria-label={`Remove ${r.filename}`} onClick={async () => { await api.removeRef(project.id, r.id); reload(); }}>✕</button></div>
@@ -121,7 +136,7 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
           </div>
           <div className="panel">
             <h3>Privacy</h3>
-            <p className="muted">Files stay on this machine in the project folder. Nothing is uploaded to a service or used for training. Deleting a project deletes its files.</p>
+            <p className="muted">Files stay in this browser, on this device. Nothing is sent to a server or used for training. Deleting a project deletes its files. Clearing this site's browser data also deletes them.</p>
           </div>
         </aside>
       </div>
@@ -129,7 +144,7 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
   );
 }
 
-export function SetupScreen({ project, reload, health }: { project: ProjectFull; reload: () => void; health: Health | null }) {
+export function SetupScreen({ project, reload, health }: { project: ProjectFull; reload: () => void; health: Health }) {
   const [inferred, setInferred] = useState<ReconstructionResult | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,8 +226,8 @@ export function SetupScreen({ project, reload, health }: { project: ProjectFull;
                 <dt>Mesh edge length</dt><dd>{(cat.quality[project.setup.quality].ds * 1000).toFixed(0)} mm</dd>
                 <dt>Texture</dt><dd>{cat.quality[project.setup.quality].texture} px</dd>
                 <dt>Self-collision</dt><dd>{cat.quality[project.setup.quality].selfCollide ? 'On' : 'Off'}</dd>
-                <dt>Time on Apple M6</dt><dd>{ESTIMATE[project.setup.quality]}</dd>
-                <dt>Compute cost</dt><dd>$0, runs locally</dd>
+                <dt>Time on Apple M6, measured</dt><dd>{ESTIMATE[project.setup.quality]}</dd>
+                <dt>Compute cost</dt><dd>$0, runs in this browser</dd>
               </dl>
             )}
           </div>

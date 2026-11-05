@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
-import { api, fileUrl, type Health, type ProjectCard } from '../api.ts';
+import { api, useFileUrl, type Health, type ProjectCard } from '../api.ts';
 import { navigate, onLiveEvent } from '../App.tsx';
+
+function Cover({ card }: { card: ProjectCard }) {
+  const url = useFileUrl(card.id, card.cover);
+  return <button className="cover" aria-label={`Open ${card.name}`} style={url ? { backgroundImage: `url(${url})` } : {}} onClick={() => navigate(`#/p/${card.id}/${card.versions ? 'studio' : 'import'}`)} />;
+}
 
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
-export function Library({ health }: { health: Health | null }) {
+export function Library({ health }: { health: Health }) {
   const [items, setItems] = useState<ProjectCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -30,16 +35,11 @@ export function Library({ health }: { health: Health | null }) {
             <span className="brand-mark" aria-hidden />
             <h1>AI 3D Studio</h1>
           </div>
-          <p className="muted">Turn reference images into editable, simulated, exportable 3D garments. Hoodies first.</p>
+          <p className="muted">Turn reference images into editable, simulated, exportable 3D garments. Hoodies first. Runs entirely in this browser.</p>
         </div>
         <button className="btn primary" onClick={create}>New project</button>
       </div>
       {error && <div className="notice bad" role="alert">{error}</div>}
-      {health && !health.blender.path && (
-        <div className="notice" style={{ marginBottom: 16 }}>
-          Blender is not installed, so .blend export is unavailable. GLB and OBJ export still work.
-        </div>
-      )}
       {items === null && !error && <p className="muted">Loading projects…</p>}
       {items?.length === 0 && (
         <div className="empty">
@@ -51,7 +51,7 @@ export function Library({ health }: { health: Health | null }) {
       <div className="cards">
         {items?.map((p) => (
           <article className="card" key={p.id}>
-            <button className="cover" aria-label={`Open ${p.name}`} style={p.cover ? { backgroundImage: `url(${fileUrl(p.id, p.cover)})` } : {}} onClick={() => navigate(`#/p/${p.id}/${p.versions ? 'studio' : 'import'}`)} />
+            <Cover card={p} />
             <div className="body">
               {renaming === p.id ? (
                 <input type="text" defaultValue={p.name} autoFocus aria-label="Project name" onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setRenaming(null); }} onBlur={async (e) => { await api.patch(p.id, { name: e.target.value }); setRenaming(null); load(); }} />

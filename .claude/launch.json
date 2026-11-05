@@ -1,6 +1,15 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "studio", "runtimeExecutable": "bun", "runtimeArgs": ["run", "src/server/index.ts"], "port": 8787 }
+    {
+      "name": "studio",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5183"
+      ],
+      "port": 5183
+    }
   ]
 }

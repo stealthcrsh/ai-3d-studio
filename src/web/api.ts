@@ -1,26 +1,18 @@
-import type { Job, Project, Reference, Version } from '../server/store.ts';
+import { useEffect, useState } from 'react';
+import { CLIPS } from '../core/avatar.ts';
 import type { EditProposal } from '../core/edits.ts';
 import type { HoodieParams } from '../core/params.ts';
-import type { ReconstructionResult } from '../server/providers.ts';
+import { bytesText } from '../engine/platform.ts';
+import { PROVIDERS, type ReconstructionResult } from '../engine/providers.ts';
+import type { ExportFormat, Job, Project, Reference, Version } from '../engine/store.ts';
+import { CATALOG, Studio, type ProjectCard, type ProjectFull } from '../engine/studio.ts';
+import { IndexedDbStorage, MemoryStorage, WorkerStageRunner } from './platform.ts';
 
-export type { Job, Project, Reference, Version, EditProposal, HoodieParams, ReconstructionResult };
-export type ProjectFull = Project & { jobs: Job[] };
-
-export interface ProjectCard {
-  id: string;
-  name: string;
-  updatedAt: string;
-  references: number;
-  cover: string | null;
-  versions: number;
-  tier: string;
-  label: string | null;
-  lastJob: { id: string; status: string; kind: string } | null;
-}
+export type { EditProposal, ExportFormat, HoodieParams, Job, Project, ProjectCard, ProjectFull, ReconstructionResult, Reference, Version };
 
 export interface Health {
-  ok: boolean;
-  blender: { path: string | null; version: string | null };
+  storage: { kind: string; durable: boolean };
+  webgl: boolean;
   providers: { id: string; label: string; kind: string; status: string; note: string }[];
   editInterpreter: { id: string; kind: string; note: string };
   catalog: {
@@ -34,49 +26,125 @@ export interface Health {
   };
 }
 
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(`/api${path}`, init);
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new ApiError(data.error ?? `Request failed (${r.status})`, data);
-  return data as T;
-}
+let studio: Studio;
+let health: Health;
 
-export class ApiError extends Error {
-  constructor(message: string, public data: Record<string, unknown>) {
-    super(message);
+function hasWebgl() {
+  try {
+    return Boolean(document.createElement('canvas').getContext('webgl2'));
+  } catch {
+    return false;
   }
 }
 
-const post = <T,>(path: string, body?: unknown) => call<T>(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
+/** Opens local storage and recovers any job that was running when the page last closed. */
+export async function bootStudio() {
+  let storage: IndexedDbStorage | MemoryStorage;
+  let runner: WorkerStageRunner;
+  try {
+    storage = await IndexedDbStorage.open();
+    runner = new WorkerStageRunner(null);
+    void navigator.storage?.persist?.().catch(() => false);
+  } catch {
+    storage = new MemoryStorage();
+    runner = new WorkerStageRunner(storage);
+  }
+  studio = new Studio(storage, runner);
+  await studio.start();
+  (globalThis as unknown as { __studio: Studio }).__studio = studio;
+  health = {
+    storage: { kind: storage.kind, durable: storage.durable },
+    webgl: hasWebgl(),
+    providers: PROVIDERS.map(({ available, ...p }) => {
+      void available;
+      return p;
+    }),
+    editInterpreter: { id: 'rule-based-v1', kind: 'rules', note: 'Deterministic command parser. No language model is connected.' },
+    catalog: CATALOG as unknown as Health['catalog'],
+  };
+  return health;
+}
+
+export const getHealth = () => health;
+export const onStudioEvent = (l: (e: Record<string, unknown>) => void) => studio.jobs.subscribe(l);
 
 export const api = {
-  health: () => call<Health>('/health'),
-  list: () => call<ProjectCard[]>('/projects'),
-  create: (name: string) => post<Project>('/projects', { name }),
-  get: (id: string) => call<ProjectFull>(`/projects/${id}`),
-  patch: (id: string, body: Record<string, unknown>) => call<Project>(`/projects/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
-  remove: (id: string) => call(`/projects/${id}`, { method: 'DELETE' }),
-  duplicate: (id: string) => post<Project>(`/projects/${id}/duplicate`),
-  upload: (id: string, files: File[]) => {
-    const f = new FormData();
-    for (const file of files) f.append('files', file);
-    return call<{ added: Reference[]; errors: string[]; project: Project }>(`/projects/${id}/references`, { method: 'POST', body: f });
-  },
-  setView: (id: string, rid: string, view: string) => call<Project>(`/projects/${id}/references/${rid}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ view }) }),
-  removeRef: (id: string, rid: string) => call<Project>(`/projects/${id}/references/${rid}`, { method: 'DELETE' }),
-  infer: (id: string) => call<ReconstructionResult>(`/projects/${id}/infer`),
-  generate: (id: string) => post<{ version: Version; job: Job }>(`/projects/${id}/generate`),
-  previewEdit: (id: string, body: { text?: string; patch?: Partial<HoodieParams>; summary?: string }) => post<EditProposal>(`/projects/${id}/edits/preview`, body),
-  applyEdit: (id: string, body: { patch: Partial<HoodieParams>; source: 'chat' | 'manual'; summary: string }) => post<{ version: Version; job: Job }>(`/projects/${id}/edits/apply`, body),
-  restore: (id: string, vid: string) => post<Project>(`/projects/${id}/versions/${vid}/restore`),
-  approve: (id: string, vid: string, on: boolean) => post<Project>(`/projects/${id}/versions/${vid}/${on ? 'approve' : 'unapprove'}`),
-  regenerate: (id: string, vid: string, body: Record<string, unknown>) => post<{ version: Version; job: Job }>(`/projects/${id}/versions/${vid}/regenerate`, body),
-  bakeMotion: (id: string, vid: string, clip: string) => post<{ job?: Job; alreadyBaked?: boolean }>(`/projects/${id}/versions/${vid}/motion`, { clip }),
-  exportAsset: (id: string, vid: string, format: string, clip: string | null) => post<{ job: Job }>(`/projects/${id}/versions/${vid}/export`, { format, clip }),
-  cancelJob: (id: string, jid: string) => post(`/projects/${id}/jobs/${jid}/cancel`),
-  retryJob: (id: string, jid: string) => post<Job>(`/projects/${id}/jobs/${jid}/retry`),
+  list: () => studio.list(),
+  create: (name: string) => studio.create(name),
+  get: (id: string) => studio.get(id),
+  patch: (id: string, body: Parameters<Studio['patch']>[1]) => studio.patch(id, body),
+  remove: (id: string) => studio.remove(id),
+  duplicate: (id: string) => studio.duplicate(id),
+  upload: async (id: string, files: File[]) => studio.upload(id, await Promise.all(files.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })))),
+  setView: (id: string, rid: string, view: string) => studio.setView(id, rid, view as never),
+  removeRef: (id: string, rid: string) => studio.removeRef(id, rid),
+  infer: (id: string) => studio.infer(id),
+  generate: (id: string) => studio.generate(id),
+  previewEdit: (id: string, body: Parameters<Studio['previewEdit']>[1]) => studio.previewEdit(id, body),
+  applyEdit: (id: string, body: Parameters<Studio['applyEdit']>[1]) => studio.applyEdit(id, body),
+  restore: (id: string, vid: string) => studio.restore(id, vid),
+  approve: (id: string, vid: string, on: boolean) => studio.approve(id, vid, on),
+  regenerate: (id: string, vid: string, body: Parameters<Studio['regenerate']>[2]) => studio.regenerate(id, vid, body),
+  bakeMotion: (id: string, vid: string, clip: string) => studio.bakeMotion(id, vid, clip as keyof typeof CLIPS),
+  exportAsset: (id: string, vid: string, format: ExportFormat, clip: string | null) => studio.exportAsset(id, vid, format, clip as never),
+  cancelJob: (id: string, jid: string) => studio.cancelJob(id, jid),
+  retryJob: (id: string, jid: string) => studio.retryJob(id, jid),
 };
 
-export const fileUrl = (pid: string, rel: string) => `/files/${pid}/${rel.split('/').map(encodeURIComponent).join('/')}`;
+const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', glb: 'model/gltf-binary', json: 'application/json', txt: 'text/plain', py: 'text/plain', obj: 'text/plain', mtl: 'text/plain' };
+const mimeOf = (name: string) => MIME[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
+
+export const files = {
+  bytes: async (pid: string, rel: string) => {
+    const b = await studio.readFile(pid, rel);
+    if (!b) throw new Error(`Missing file: ${rel}`);
+    return b;
+  },
+  json: async <T,>(pid: string, rel: string) => JSON.parse(bytesText(await files.bytes(pid, rel))) as T,
+  floats: async (pid: string, rel: string) => {
+    const b = await files.bytes(pid, rel);
+    return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+  },
+  url: async (pid: string, rel: string) => URL.createObjectURL(new Blob([(await files.bytes(pid, rel)).slice()], { type: mimeOf(rel) })),
+  download: async (pid: string, rel: string, name: string) => {
+    const url = await files.url(pid, rel);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  },
+  open: async (pid: string, rel: string) => {
+    const url = await files.url(pid, rel);
+    window.open(url, '_blank', 'noopener');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
+};
+
+/** Temporary browser URL for a stored file, released when the component goes away. */
+export function useFileUrl(pid: string, rel: string | null | undefined) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!rel) {
+      setUrl(null);
+      return;
+    }
+    let made: string | null = null;
+    let stop = false;
+    files.url(pid, rel).then((u) => {
+      if (stop) URL.revokeObjectURL(u);
+      else {
+        made = u;
+        setUrl(u);
+      }
+    }).catch(() => setUrl(null));
+    return () => {
+      stop = true;
+      if (made) URL.revokeObjectURL(made);
+    };
+  }, [pid, rel]);
+  return url;
+}
+
 export const cm = (m: number) => `${(m * 100).toFixed(1).replace(/\.0$/, '')} cm`;
 export const bytes = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);

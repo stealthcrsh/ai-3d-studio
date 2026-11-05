@@ -1,0 +1,241 @@
+{
+ "generatedAt": "2026-11-05T06:25:39.219Z",
+ "hardware": {
+  "cpu": "Apple M6",
+  "cores": 12,
+  "ramGB": 17
+ },
+ "runtime": "bun 1.4.4",
+ "peakRssMB": 540,
+ "reproducibleDrape": true,
+ "fixtureHashes": {
+  "hoodie_front.png": "5298e640",
+  "hoodie_back.png": "2d14680b"
+ },
+ "quality": [
+  {
+   "quality": "preview",
+   "simVertices": 1104,
+   "triangles": 2128,
+   "buildMs": 7,
+   "drapeMs": 237,
+   "textureMs": 157,
+   "avatarMs": 477,
+   "glbMs": 2,
+   "bakeWalkMs": 198,
+   "glbMB": 1.86,
+   "p99Stretch": 1.13,
+   "maxStretch": 1.38,
+   "penetratingPct": 0,
+   "walkWorstStretchP99": 1.251,
+   "walkPenetratingPct": 0,
+   "walkDeepestMm": 2.3,
+   "walkPeakSpeed": 2.6
+  },
+  {
+   "quality": "standard",
+   "simVertices": 4811,
+   "triangles": 9448,
+   "buildMs": 13,
+   "drapeMs": 3176,
+   "textureMs": 494,
+   "avatarMs": 602,
+   "glbMs": 1,
+   "bakeWalkMs": 2685,
+   "glbMB": 3.4,
+   "p99Stretch": 1.137,
+   "maxStretch": 1.92,
+   "penetratingPct": 0,
+   "walkWorstStretchP99": 1.33,
+   "walkPenetratingPct": 0,
+   "walkDeepestMm": 1.8,
+   "walkPeakSpeed": 2.6
+  },
+  {
+   "quality": "high",
+   "simVertices": 10967,
+   "triangles": 21664,
+   "buildMs": 18,
+   "drapeMs": 9988,
+   "textureMs": 1387,
+   "avatarMs": 473,
+   "glbMs": 2,
+   "bakeWalkMs": 8328,
+   "glbMB": 7.19,
+   "p99Stretch": 1.149,
+   "maxStretch": 3.43,
+   "penetratingPct": 0,
+   "walkWorstStretchP99": 1.349,
+   "walkPenetratingPct": 0,
+   "walkDeepestMm": 0,
+   "walkPeakSpeed": 3.6
+  }
+ ],
+ "stress": [
+  {
+   "body": "slim",
+   "clip": "walk",
+   "fabric": "fleece",
+   "drapeP99": 1.098,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.234,
+   "clipPenetratingPct": 0,
+   "deepestMm": 0,
+   "peakSpeed": 2.6
+  },
+  {
+   "body": "slim",
+   "clip": "jog",
+   "fabric": "fleece",
+   "drapeP99": 1.098,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.103,
+   "clipPenetratingPct": 0,
+   "deepestMm": 0,
+   "peakSpeed": 6.5
+  },
+  {
+   "body": "slim",
+   "clip": "armlift",
+   "fabric": "fleece",
+   "drapeP99": 1.098,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.248,
+   "clipPenetratingPct": 0,
+   "deepestMm": 0,
+   "peakSpeed": 2.5
+  },
+  {
+   "body": "regular",
+   "clip": "walk",
+   "fabric": "fleece",
+   "drapeP99": 1.13,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.251,
+   "clipPenetratingPct": 0,
+   "deepestMm": 2.3,
+   "peakSpeed": 2.6
+  },
+  {
+   "body": "regular",
+   "clip": "walk",
+   "fabric": "jersey",
+   "drapeP99": 1.105,
+   "drapePenetratingPct": 0.09,
+   "clipP99": 1.196,
+   "clipPenetratingPct": 0.09,
+   "deepestMm": 6.7,
+   "peakSpeed": 2.6
+  },
+  {
+   "body": "regular",
+   "clip": "walk",
+   "fabric": "denim",
+   "drapeP99": 1.145,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.333,
+   "clipPenetratingPct": 0.09,
+   "deepestMm": 5.5,
+   "peakSpeed": 6.3
+  },
+  {
+   "body": "regular",
+   "clip": "walk",
+   "fabric": "nylon",
+   "drapeP99": 1.121,
+   "drapePenetratingPct": 0.09,
+   "clipP99": 1.125,
+   "clipPenetratingPct": 0.09,
+   "deepestMm": 12.6,
+   "peakSpeed": 2.1
+  },
+  {
+   "body": "regular",
+   "clip": "jog",
+   "fabric": "fleece",
+   "drapeP99": 1.13,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.303,
+   "clipPenetratingPct": 0.09,
+   "deepestMm": 7.8,
+   "peakSpeed": 8
+  },
+  {
+   "body": "regular",
+   "clip": "jog",
+   "fabric": "jersey",
+   "drapeP99": 1.105,
+   "drapePenetratingPct": 0.09,
+   "clipP99": 1.212,
+   "clipPenetratingPct": 0,
+   "deepestMm": 2.3,
+   "peakSpeed": 6.8
+  },
+  {
+   "body": "regular",
+   "clip": "jog",
+   "fabric": "denim",
+   "drapeP99": 1.145,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.199,
+   "clipPenetratingPct": 0.18,
+   "deepestMm": 6.1,
+   "peakSpeed": 7.8
+  },
+  {
+   "body": "regular",
+   "clip": "jog",
+   "fabric": "nylon",
+   "drapeP99": 1.121,
+   "drapePenetratingPct": 0.09,
+   "clipP99": 1.164,
+   "clipPenetratingPct": 0.18,
+   "deepestMm": 8.2,
+   "peakSpeed": 6
+  },
+  {
+   "body": "regular",
+   "clip": "armlift",
+   "fabric": "fleece",
+   "drapeP99": 1.13,
+   "drapePenetratingPct": 0,
+   "clipP99": 1.277,
+   "clipPenetratingPct": 0.09,
+   "deepestMm": 6.5,
+   "peakSpeed": 2.4
+  },
+  {
+   "body": "broad",
+   "clip": "walk",
+   "fabric": "fleece",
+   "drapeP99": 1.226,
+   "drapePenetratingPct": 0.45,
+   "clipP99": 1.443,
+   "clipPenetratingPct": 0.63,
+   "deepestMm": 20.1,
+   "peakSpeed": 2.8
+  },
+  {
+   "body": "broad",
+   "clip": "jog",
+   "fabric": "fleece",
+   "drapeP99": 1.226,
+   "drapePenetratingPct": 0.45,
+   "clipP99": 1.249,
+   "clipPenetratingPct": 0.36,
+   "deepestMm": 17.3,
+   "peakSpeed": 6.2
+  },
+  {
+   "body": "broad",
+   "clip": "armlift",
+   "fabric": "fleece",
+   "drapeP99": 1.226,
+   "drapePenetratingPct": 0.45,
+   "clipP99": 1.279,
+   "clipPenetratingPct": 0.54,
+   "deepestMm": 13.3,
+   "peakSpeed": 2.8
+  }
+ ]
+}

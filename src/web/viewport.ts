@@ -198,7 +198,7 @@ export class Viewport {
     if (notify) this.onSelect?.(part);
   }
 
-  async loadModel(url: string, meta: SceneMeta | null, heatUrl?: string) {
+  async loadModel(url: string, meta: SceneMeta | null, heat: Float32Array | null) {
     const token = ++this.loadToken;
     const gltf = await this.loader.loadAsync(url);
     if (token !== this.loadToken) return false;
@@ -234,15 +234,7 @@ export class Viewport {
       if (mat.normalMap) mat.normalScale.set(0.7, 0.7);
     });
     this.scene.add(gltf.scene);
-    this.heat = null;
-    if (heatUrl) {
-      try {
-        const r = await fetch(heatUrl);
-        if (r.ok) this.heat = new Float32Array(await r.arrayBuffer());
-      } catch {
-        this.heat = null;
-      }
-    }
+    this.heat = heat;
     this.applyVisibility();
     this.applyMaterials();
     return true;
@@ -354,9 +346,7 @@ export class Viewport {
     this.scene.add(g);
   }
 
-  async loadMotion(clip: string, metaUrl: string, framesUrl: string) {
-    const meta = await (await fetch(metaUrl)).json();
-    const data = new Float32Array(await (await fetch(framesUrl)).arrayBuffer());
+  loadMotion(clip: string, meta: { fps: number; frames: number; vertices: number }, data: Float32Array) {
     this.motion = { clip, fps: meta.fps, frames: meta.frames, vertices: meta.vertices, data };
     const animClip = this.clips.find((c) => c.name === clip);
     this.action?.stop();
@@ -367,7 +357,6 @@ export class Viewport {
     }
     this.time = 0;
     this.applyFrame(0);
-    return meta;
   }
 
   clearMotion() {
@@ -488,7 +477,7 @@ export class Viewport {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(size, size, false);
     const t = new THREE.Vector3(0, 1.12, 0);
-    this.camera.position.set(0, 1.18, view === 'front' ? 3.1 : -3.1);
+    this.camera.position.set(0, 1.16, view === 'front' ? 2.1 : -2.1);
     this.camera.lookAt(t);
     this.renderer.render(this.scene, this.camera);
     const data = this.renderer.domElement.toDataURL('image/png');
@@ -504,7 +493,7 @@ export class Viewport {
   private tick = () => {
     this.raf = requestAnimationFrame(this.tick);
     const now = performance.now();
-    const dt = Math.min(0.1, (now - this.lastTick) / 1000);
+    const dt = Math.min(0.5, (now - this.lastTick) / 1000);
     this.lastTick = now;
     this.controls.update();
     if (this.playing && this.motion) {

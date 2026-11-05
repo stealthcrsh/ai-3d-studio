@@ -201,7 +201,8 @@ export function clipPose(sk: Skeleton, clip: ClipId, time: number): Pose {
   for (const [s, off] of [['L', 0], ['R', Math.PI]] as const) {
     R[J[`UpperLeg_${s}`]] = qAxis([1, 0, 0], thigh(off) * DEG);
     R[J[`LowerLeg_${s}`]] = qAxis([1, 0, 0], knee(off) * DEG);
-    R[J[`Foot_${s}`]] = qAxis([1, 0, 0], (-thigh(off) * 0.4 - knee(off) * 0.35) * DEG);
+    // Mostly cancels thigh and knee, so the sole stays near level through the stride.
+    R[J[`Foot_${s}`]] = qAxis([1, 0, 0], -(thigh(off) + knee(off)) * 0.8 * DEG);
   }
   const armAmp = (clip === 'jog' ? 44 : 20) * 1;
   const elbow = clip === 'jog' ? 72 : 16;
@@ -232,7 +233,7 @@ const smin = (a: number, b: number, k: number) => {
 };
 
 /** The visible body sits a few millimetres inside the colliders, so cloth triangles spanning a contact do not cut it. */
-const VISUAL_INSET = 0.007;
+const VISUAL_INSET = 0.011;
 
 function bodySdf(sk: Skeleton, x: number, y: number, z: number): number {
   let d = 1e9;
@@ -245,7 +246,7 @@ function bodySdf(sk: Skeleton, x: number, y: number, z: number): number {
     const paz = z - c.a[2];
     const t = Math.min(1, Math.max(0, (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz)));
     const dist = Math.hypot(pax - bax * t, pay - bay * t, paz - baz * t) - (c.ra + (c.rb - c.ra) * t);
-    d = smin(d, dist, 0.02);
+    d = smin(d, dist, 0.014);
   }
   return d + VISUAL_INSET;
 }

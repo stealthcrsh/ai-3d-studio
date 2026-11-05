@@ -1,5 +1,5 @@
 import { Component, useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, type Health } from './api.ts';
+import { bootStudio, onStudioEvent, type Health } from './api.ts';
 import { Library } from './screens/Library.tsx';
 import { ProjectScreen } from './screens/ProjectScreen.tsx';
 
@@ -47,15 +47,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 
 export function App() {
   const [route, setRoute] = useState(parseRoute);
-  const [online, setOnline] = useState(true);
   const [health, setHealth] = useState<Health | null>(null);
-
-  const refreshHealth = useCallback(() => {
-    api.health().then((h) => {
-      setHealth(h);
-      setOnline(true);
-    }).catch(() => setOnline(false));
-  }, []);
+  const [lockedOut, setLockedOut] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
 
   useEffect(() => {
     const on = () => setRoute(parseRoute());
@@ -64,25 +58,44 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    refreshHealth();
-    const es = new EventSource('/api/events');
-    es.onmessage = (m) => {
-      setOnline(true);
-      const event = JSON.parse(m.data) as LiveEvent;
-      for (const l of listeners) l(event);
+    let unsub: (() => void) | undefined;
+    const start = async () => {
+      try {
+        const h = await bootStudio();
+        unsub = onStudioEvent((event) => {
+          for (const l of listeners) l(event as LiveEvent);
+        });
+        setHealth(h);
+      } catch (e) {
+        setBootError((e as Error).message);
+      }
     };
-    es.onerror = () => setOnline(false);
-    es.onopen = () => {
-      setOnline(true);
-      refreshHealth();
-    };
-    return () => es.close();
-  }, [refreshHealth]);
+    // Only one tab runs jobs at a time. A second tab waits, so the two cannot overwrite each other's work.
+    if (navigator.locks) {
+      void navigator.locks.request('ai-3d-studio-engine', { ifAvailable: true }, (lock) => {
+        if (!lock) {
+          setLockedOut(true);
+          return undefined;
+        }
+        void start();
+        return new Promise<void>(() => undefined);
+      }).catch(() => void start());
+    } else void start();
+    return () => unsub?.();
+  }, []);
 
+  if (lockedOut) {
+    return <main className="page"><div className="notice" role="alert"><h2>The studio is open in another tab</h2><p>Only one tab can work on your projects at a time, so nothing gets overwritten. Close the other tab, then reload this one.</p></div></main>;
+  }
+  if (bootError) {
+    return <main className="page"><div className="notice bad" role="alert"><h2>The studio could not start</h2><p>{bootError}</p></div></main>;
+  }
+  if (!health) return <main className="page"><p className="muted">Starting the studio…</p></main>;
   return (
     <>
+      {!health.webgl && <div className="notice bad" role="alert" style={{ margin: 12 }}>This browser cannot show 3D because WebGL 2 is unavailable. Projects can still be managed, but the viewport will not work.</div>}
+      {!health.storage.durable && <div className="notice" role="alert" style={{ margin: 12 }}>This browser is blocking storage, perhaps because of a private window. You can work, but everything is lost when this tab closes.</div>}
       <ErrorBoundary>{route.project ? <ProjectScreen key={route.project} id={route.project} tab={route.tab} health={health} /> : <Library health={health} />}</ErrorBoundary>
-      {!online && <div className="offline" role="alert">The studio server is not responding. Your saved work is safe on disk. Reconnecting…</div>}
     </>
   );
 }

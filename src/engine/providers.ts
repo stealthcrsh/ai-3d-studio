@@ -1,6 +1,6 @@
 import { DEFAULT_PARAMS, PARAM_META, type HoodieParams, type NumericParam } from '../core/params.ts';
 import { clamp } from '../core/math.ts';
-import { colorDistance, type ImageAnalysis } from './vision.ts';
+import { colorDistance, type ImageAnalysis } from '../core/vision.ts';
 import type { ParamNote, Project, Reference } from './store.ts';
 
 /**

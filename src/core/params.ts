@@ -85,7 +85,7 @@ export const DEFAULT_PARAMS: HoodieParams = {
 export const PARAM_META: Record<NumericParam, { label: string; min: number; max: number; parts: PartId[] }> = {
   bodyWidth: { label: 'Body width', min: 0.42, max: 0.85, parts: ['Body_Front', 'Body_Back', 'Hem_Rib', 'Pocket', 'Sleeve_L', 'Sleeve_R', 'Cuff_L', 'Cuff_R', 'Hood_L', 'Hood_R', 'Drawcord_L', 'Drawcord_R'] },
   bodyLength: { label: 'Body length', min: 0.5, max: 1.0, parts: ['Body_Front', 'Body_Back', 'Hem_Rib', 'Pocket', 'Drawcord_L', 'Drawcord_R'] },
-  shoulderWidth: { label: 'Shoulder width', min: 0.42, max: 0.82, parts: ['Body_Front', 'Body_Back', 'Sleeve_L', 'Sleeve_R', 'Cuff_L', 'Cuff_R', 'Pocket', 'Drawcord_L', 'Drawcord_R'] },
+  shoulderWidth: { label: 'Shoulder width', min: 0.42, max: 0.82, parts: ['Body_Front', 'Body_Back', 'Hem_Rib', 'Sleeve_L', 'Sleeve_R', 'Cuff_L', 'Cuff_R', 'Pocket', 'Drawcord_L', 'Drawcord_R'] },
   sleeveLength: { label: 'Sleeve length', min: 0.28, max: 0.8, parts: ['Sleeve_L', 'Sleeve_R', 'Cuff_L', 'Cuff_R'] },
   sleeveWidth: { label: 'Sleeve width', min: 0.16, max: 0.38, parts: ['Sleeve_L', 'Sleeve_R', 'Cuff_L', 'Cuff_R', 'Body_Front', 'Body_Back', 'Hem_Rib', 'Pocket', 'Drawcord_L', 'Drawcord_R', 'Hood_L', 'Hood_R'] },
   cuffWidth: { label: 'Cuff width', min: 0.07, max: 0.16, parts: ['Cuff_L', 'Cuff_R', 'Sleeve_L', 'Sleeve_R'] },

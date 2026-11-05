@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
-import { api, bytes, cm, fileUrl, type EditProposal, type Health, type HoodieParams, type Job, type ProjectFull, type Version } from '../api.ts';
+import { api, bytes, cm, files, useFileUrl, type EditProposal, type ExportFormat, type Health, type HoodieParams, type Job, type ProjectFull, type Version } from '../api.ts';
 import type { SceneMeta, ViewMode, Viewport } from '../viewport.ts';
 import type { QaReport } from '../../core/qa.ts';
 
@@ -19,7 +19,7 @@ export interface PanelCtx {
   scene: SceneMeta | null;
   job: Job | null;
   reload: () => void;
-  health: Health | null;
+  health: Health;
   viewport: MutableRefObject<Viewport | null>;
   selected: string | null;
   setSelected: (p: string | null) => void;
@@ -68,8 +68,8 @@ export function JobStatus({ ctx }: { ctx: PanelCtx }) {
       {job.error && <div className="notice bad" role="alert">{job.error}</div>}
       {job.status === 'interrupted' && <div className="notice">The server stopped while this ran. Finished stages are saved, so resuming only does what is left.</div>}
       <div className="row">
-        {active && <button className="btn sm" onClick={() => api.cancelJob(project.id, job.id).then(reload)}>Cancel</button>}
-        {['failed', 'cancelled', 'interrupted'].includes(job.status) && <button className="btn sm primary" onClick={() => api.retryJob(project.id, job.id).then(reload)}>{job.status === 'interrupted' ? 'Resume' : 'Retry'}</button>}
+        {active && <button className="btn sm" onClick={() => void api.cancelJob(project.id, job.id).then(reload)}>Cancel</button>}
+        {['failed', 'cancelled', 'interrupted'].includes(job.status) && <button className="btn sm primary" onClick={() => void api.retryJob(project.id, job.id).then(reload)}>{job.status === 'interrupted' ? 'Resume' : 'Retry'}</button>}
       </div>
     </div>
   );
@@ -159,6 +159,11 @@ function EditChat({ ctx }: { ctx: PanelCtx }) {
   );
 }
 
+function StoredFigure({ pid, rel, alt, caption }: { pid: string; rel: string; alt: string; caption: string }) {
+  const url = useFileUrl(pid, rel);
+  return <figure>{url && <img src={url} alt={alt} />}<figcaption>{caption}</figcaption></figure>;
+}
+
 function References({ ctx }: { ctx: PanelCtx }) {
   const refs = ctx.project.references.filter((r) => r.kind === 'png' || r.kind === 'jpeg');
   return (
@@ -167,10 +172,7 @@ function References({ ctx }: { ctx: PanelCtx }) {
       {refs.length === 0 && <p className="dim">None. This version comes from the template alone.</p>}
       <div className="compare">
         {refs.map((r) => (
-          <figure key={r.id}>
-            <img src={fileUrl(ctx.project.id, r.file)} alt={`${r.view} reference`} />
-            <figcaption>{r.view}{r.usage === 'stored-not-used' ? ', not used' : ''}</figcaption>
-          </figure>
+          <StoredFigure key={r.id} pid={ctx.project.id} rel={r.file} alt={`${r.view} reference`} caption={`${r.view}${r.usage === 'stored-not-used' ? ', not used' : ''}`} />
         ))}
       </div>
       {refs.length > 0 && <div className="row"><button className="btn sm" onClick={() => ctx.viewport.current?.setCamera('front')}>Match front</button><button className="btn sm" onClick={() => ctx.viewport.current?.setCamera('back')}>Match back</button></div>}
@@ -190,7 +192,7 @@ function History({ ctx }: { ctx: PanelCtx }) {
             <div><span className="mono dim">v{v.n}</span> {v.summary}</div>
             <div className="row wrap"><span className={`badge ${v.tier}`}>{v.tier.toUpperCase()}</span>{v.approved && <span className="badge pass">APPROVED</span>}</div>
           </div>
-          {v.id === version?.id ? <span className="dim">Current</span> : <button className="btn sm" disabled={ctx.running} onClick={() => api.restore(project.id, v.id).then(reload)}>Restore</button>}
+          {v.id === version?.id ? <span className="dim">Current</span> : <button className="btn sm" disabled={ctx.running} onClick={() => void api.restore(project.id, v.id).then(reload)}>Restore</button>}
         </div>
       ))}
     </div>
@@ -336,7 +338,7 @@ export function GarmentPanel({ ctx }: { ctx: PanelCtx }) {
       <div className="section">
         <h3>Fit and pinning</h3>
         <label className="field">Avatar
-          <select value={version.avatar} disabled={ctx.running} onChange={(e) => api.regenerate(project.id, version.id, { avatar: e.target.value }).then(reload).catch((err) => setError(err.message))}>
+          <select value={version.avatar} disabled={ctx.running} onChange={(e) => void api.regenerate(project.id, version.id, { avatar: e.target.value as never }).then(reload).catch((err) => setError(err.message))}>
             {Object.entries(cat?.bodies ?? {}).map(([k, b]) => <option key={k} value={k}>{b.label}</option>)}
           </select>
         </label>
@@ -398,7 +400,7 @@ export function MotionPanel({ ctx }: { ctx: PanelCtx }) {
   const baked = useMemo(() => version?.artifacts.motion ?? {}, [version?.artifacts.motion]);
   useEffect(() => {
     for (const [c, dir] of Object.entries(baked)) {
-      if (!meta[c]) fetch(fileUrl(project.id, `${dir}/meta.json`)).then((r) => r.json()).then((m) => setMeta((x) => ({ ...x, [c]: m })));
+      if (!meta[c]) void files.json<(typeof meta)[string]>(project.id, `${dir}/meta.json`).then((m) => setMeta((x) => ({ ...x, [c]: m })));
     }
   }, [baked, meta, project.id]);
   useEffect(() => {
@@ -423,7 +425,7 @@ export function MotionPanel({ ctx }: { ctx: PanelCtx }) {
               {isBaked ? (
                 <button className="btn sm" aria-pressed={clip === k} disabled={clip === k} onClick={() => void selectClip(k)}>{clip === k ? 'Loaded' : 'Load'}</button>
               ) : (
-                <button className="btn sm" disabled={running || version.status !== 'ready'} onClick={() => api.bakeMotion(project.id, version.id, k).then(reload)}>Bake</button>
+                <button className="btn sm" disabled={running || version.status !== 'ready'} onClick={() => void api.bakeMotion(project.id, version.id, k).then(reload)}>Bake</button>
               )}
             </div>
           );
@@ -488,7 +490,7 @@ export function ReviewPanel({ ctx }: { ctx: PanelCtx }) {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     setQa(null);
-    if (version?.artifacts.qa) fetch(fileUrl(project.id, version.artifacts.qa)).then((r) => r.json()).then(setQa);
+    if (version?.artifacts.qa) void files.json<QaReport>(project.id, version.artifacts.qa).then(setQa);
   }, [project.id, version?.artifacts.qa]);
   useEffect(() => {
     setCompare(null);
@@ -507,8 +509,10 @@ export function ReviewPanel({ ctx }: { ctx: PanelCtx }) {
       const a = r.analysis as { maskUrl?: string } | undefined;
       if (a?.maskUrl) {
         const img = new Image();
-        img.src = fileUrl(project.id, a.maskUrl);
+        const maskUrl = await files.url(project.id, a.maskUrl);
+        img.src = maskUrl;
         await img.decode();
+        URL.revokeObjectURL(maskUrl);
         const c = document.createElement('canvas');
         c.width = img.width;
         c.height = img.height;
@@ -520,14 +524,14 @@ export function ReviewPanel({ ctx }: { ctx: PanelCtx }) {
         const sil = vp.silhouette(view, 320);
         if (sil) score = iou(normalizeMask(refMask, img.width, img.height, 256), normalizeMask(sil, 320, 320, 256));
       }
-      out.push({ view, render, ref: fileUrl(project.id, r.file), iou: score });
+      out.push({ view, render, ref: await files.url(project.id, r.file), iou: score });
     }
     setCompare(out);
     setBusy(false);
   };
   const inferredCount = Object.values(version.notes).filter((n) => n.source !== 'measured' && n.source !== 'edited').length;
   const inferredSurfaces = Object.entries(scene?.textureSources?.sources ?? {}).filter(([, s]) => s === 'inferred-colour').map(([p]) => p);
-  const regen = (body: Record<string, unknown>) => api.regenerate(project.id, version.id, body).then(reload).catch((e) => setError(e.message));
+  const regen = (body: Parameters<typeof api.regenerate>[2]) => api.regenerate(project.id, version.id, body).then(reload).catch((e) => setError(e.message));
   const check = version.editCheck as undefined | { perPart: { part: string; changed: boolean; maxMoveMm: number | null; allowed: boolean }[]; unexpected: string[]; passed: boolean; drapedShiftMm?: Record<string, number | null> };
   return (
     <div data-screen="S07">
@@ -597,39 +601,44 @@ export function ReviewPanel({ ctx }: { ctx: PanelCtx }) {
         <h3>Your approval</h3>
         <p className="dim">Only you can approve. Automated checks never set this.</p>
         {version.approved ? (
-          <div className="row between"><span className="badge pass">APPROVED {new Date(version.approved.at).toLocaleDateString()}</span><button className="btn sm ghost" onClick={() => api.approve(project.id, version.id, false).then(reload)}>Withdraw</button></div>
-        ) : <button className="btn" disabled={version.status !== 'ready'} onClick={() => api.approve(project.id, version.id, true).then(reload)}>Approve this version</button>}
+          <div className="row between"><span className="badge pass">APPROVED {new Date(version.approved.at).toLocaleDateString()}</span><button className="btn sm ghost" onClick={() => void api.approve(project.id, version.id, false).then(reload)}>Withdraw</button></div>
+        ) : <button className="btn" disabled={version.status !== 'ready'} onClick={() => void api.approve(project.id, version.id, true).then(reload)}>Approve this version</button>}
       </div>
     </div>
   );
 }
 
-const MATRIX: [string, string, string, string][] = [
-  ['Geometry and named parts', 'yes', 'yes', 'yes'],
-  ['UVs', 'yes', 'yes', 'yes'],
-  ['PBR materials', 'yes', 'yes', 'Colour only'],
-  ['Textures', 'Embedded', 'Packed', 'Separate file'],
-  ['Avatar with rig', 'yes', 'yes', 'no'],
-  ['Skeletal animation', 'yes', 'yes', 'no'],
-  ['Baked cloth motion', 'Morph targets', 'Shape keys', 'no'],
-  ['Live cloth simulation setup', 'no', 'no', 'no'],
-  ['Sewing pattern data', 'no', 'no', 'no'],
+const MATRIX: [string, string, string][] = [
+  ['Geometry and named parts', 'yes', 'yes'],
+  ['UVs', 'yes', 'yes'],
+  ['PBR materials', 'yes', 'Colour only'],
+  ['Textures', 'Embedded', 'Separate file'],
+  ['Avatar with rig', 'yes', 'no'],
+  ['Skeletal animation', 'yes', 'no'],
+  ['Baked cloth motion', 'Morph targets', 'no'],
+  ['Live cloth simulation setup', 'no', 'no'],
+  ['Sewing pattern data', 'no', 'no'],
 ];
+
+interface ReportView {
+  validators: { name: string; passed: boolean; notRun?: boolean; version?: string }[];
+  warnings: string[];
+  durationMs: number;
+}
 
 export function ExportPanel({ ctx }: { ctx: PanelCtx }) {
   const { project, version, reload, health, running } = ctx;
-  const [format, setFormat] = useState<'glb' | 'blend' | 'obj'>('glb');
+  const [format, setFormat] = useState<ExportFormat>('glb');
   const baked = Object.keys(version?.artifacts.motion ?? {});
   const [clip, setClip] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [reports, setReports] = useState<Record<string, { validators: { name: string; passed: boolean; blocked?: boolean; version?: string }[]; warnings: string[]; durationMs: number }>>({});
+  const [reports, setReports] = useState<Record<string, ReportView>>({});
   useEffect(() => {
     for (const e of version?.exports ?? []) {
-      if (!reports[e.report]) fetch(fileUrl(project.id, e.report)).then((r) => r.json()).then((d) => setReports((x) => ({ ...x, [e.report]: d })));
+      if (!reports[e.report]) void files.json<ReportView>(project.id, e.report).then((d) => setReports((x) => ({ ...x, [e.report]: d })));
     }
   }, [version?.exports, project.id, reports]);
   if (!version) return <div className="section"><p className="dim">Generate a version first.</p></div>;
-  const blenderOk = Boolean(health?.blender.path);
   const go = async () => {
     setError(null);
     try {
@@ -645,21 +654,24 @@ export function ExportPanel({ ctx }: { ctx: PanelCtx }) {
       <div className="section" data-testid="export-form">
         <h3>Export</h3>
         <div className="seg" role="group" aria-label="Format">
-          {([['glb', 'GLB'], ['blend', 'Blender'], ['obj', 'OBJ']] as const).map(([k, l]) => <button key={k} aria-pressed={format === k} onClick={() => setFormat(k)}>{l}</button>)}
+          {([['glb', 'GLB'], ['blender', 'For Blender'], ['obj', 'OBJ']] as const).map(([k, l]) => <button key={k} aria-pressed={format === k} onClick={() => setFormat(k)}>{l}</button>)}
         </div>
-        {format === 'blend' && !blenderOk && <div className="notice">Blender is not installed. Only Blender can write a genuine .blend, so this export will stop and report that.</div>}
-        {format === 'blend' && blenderOk && <p className="dim">Written by {health?.blender.version}. A second Blender process reopens the file to check it.</p>}
+        {format === 'blender' && (
+          <div className="notice" data-testid="blender-note">
+            <strong>This is not a .blend file.</strong> Only Blender can write a genuine one, and this studio runs entirely in your browser. You get the same GLB, which Blender imports directly, plus a small script that saves it as a .blend from your own Blender. Neither has been tested in Blender yet.
+          </div>
+        )}
         {format !== 'obj' ? (
           <label className="field">Motion to include
             <select value={clip} onChange={(e) => setClip(e.target.value)}>
-              <option value="">None, static drape with rig and clips for the avatar</option>
-              {baked.map((c) => <option key={c} value={c}>{health?.catalog.clips[c]?.label}, baked cloth</option>)}
+              <option value="">None, static drape with avatar rig and clips</option>
+              {baked.map((c) => <option key={c} value={c}>{health.catalog.clips[c as keyof typeof health.catalog.clips]?.label}, baked cloth</option>)}
             </select>
           </label>
         ) : <p className="dim">OBJ has no animation, so it stores the static drape only.</p>}
         <dl className="kv">
           <dt>Units</dt><dd>Metres</dd>
-          <dt>Orientation</dt><dd>{format === 'blend' ? 'Z up, after import' : '+Y up, +Z front'}</dd>
+          <dt>Orientation</dt><dd>+Y up, +Z front</dd>
           <dt>Frame rate</dt><dd>{format === 'obj' ? 'n/a' : '30 fps'}</dd>
           <dt>Avatar included</dt><dd>{format === 'obj' ? 'No' : 'Yes'}</dd>
         </dl>
@@ -673,11 +685,11 @@ export function ExportPanel({ ctx }: { ctx: PanelCtx }) {
           const rep = reports[e.report];
           return (
             <div key={e.id} className="stack" style={{ borderTop: '1px solid var(--line)', paddingTop: 8 }}>
-              <div className="row between"><strong>{e.format.toUpperCase()}{e.clip ? `, ${e.clip}` : ''}</strong><span className={`badge ${e.status}`}>{e.status.toUpperCase()}</span></div>
+              <div className="row between"><strong>{e.format === 'blender' ? 'For Blender' : e.format.toUpperCase()}{e.clip ? `, ${e.clip}` : ''}</strong><span className={`badge ${e.status === 'unverified' ? 'warn' : e.status}`}>{e.status.toUpperCase()}</span></div>
               {e.message && <p className="dim">{e.message}</p>}
-              {e.files.map((f) => <a key={f.name} href={`${fileUrl(project.id, `${e.dir}/${f.name}`)}?download=${f.name}`}>{f.name} <span className="dim">{bytes(f.bytes)}</span></a>)}
-              {rep?.validators.map((v) => <div key={v.name} className="row between"><span className="muted">{v.name}{v.version ? ` ${v.version}` : ''}</span><span className={v.passed ? 'yes' : v.blocked ? 'part' : ''} style={!v.passed && !v.blocked ? { color: 'var(--bad)' } : undefined}>{v.passed ? 'Passed' : v.blocked ? 'Not run' : 'Failed'}</span></div>)}
-              <a href={fileUrl(project.id, e.report)} target="_blank" rel="noreferrer">Validation report, JSON</a>
+              {e.files.map((f) => <button key={f.name} className="btn sm" style={{ textAlign: 'left', justifyContent: 'space-between', display: 'flex' }} onClick={() => void files.download(project.id, `${e.dir}/${f.name}`, f.name)}><span>Download {f.name}</span><span className="dim">{bytes(f.bytes)}</span></button>)}
+              {rep?.validators.map((v) => <div key={v.name} className="row between"><span className="muted">{v.name}{v.version ? ` ${v.version}` : ''}</span><span className={v.passed ? 'yes' : v.notRun ? 'part' : ''} style={!v.passed && !v.notRun ? { color: 'var(--bad)' } : undefined}>{v.passed ? 'Passed' : v.notRun ? 'Not run' : 'Failed'}</span></div>)}
+              <button className="btn sm ghost" onClick={() => void files.download(project.id, e.report, `report-${e.format}.json`)}>Download validation report, JSON</button>
             </div>
           );
         })}
@@ -685,14 +697,14 @@ export function ExportPanel({ ctx }: { ctx: PanelCtx }) {
       <div className="section">
         <h3>What each format keeps</h3>
         <table className="t" data-testid="format-matrix">
-          <thead><tr><th></th><th>GLB</th><th>Blender</th><th>OBJ</th></tr></thead>
+          <thead><tr><th></th><th>GLB</th><th>OBJ</th></tr></thead>
           <tbody>
             {MATRIX.map(([label, ...vals]) => (
               <tr key={label}><td>{label}</td>{vals.map((v, i) => <td key={i} className={v === 'yes' ? 'yes' : v === 'no' ? 'no' : 'part'}>{v === 'yes' ? 'Yes' : v === 'no' ? 'No' : v}</td>)}</tr>
             ))}
           </tbody>
         </table>
-        <p className="dim">FBX and USD are not offered, because they have not been tested.</p>
+        <p className="dim">This table describes what is written to each file, confirmed by the validators. It has not been confirmed in Blender or other 3D tools. FBX and USD are not offered, because they have not been tested.</p>
       </div>
     </div>
   );

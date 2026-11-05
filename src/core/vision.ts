@@ -1,6 +1,3 @@
-import jpeg from 'jpeg-js';
-import { PNG } from 'pngjs';
-
 export interface RGBAImage {
   width: number;
   height: number;
@@ -47,26 +44,19 @@ export function readDimensions(bytes: Uint8Array, kind: 'png' | 'jpeg'): { width
   return null;
 }
 
-export function decodeImage(bytes: Uint8Array, kind: 'png' | 'jpeg'): RGBAImage {
+/** Pixel access is supplied by the platform: canvas in the browser, pure JS libraries in the test runner. */
+export interface ImageCodec {
+  decode(bytes: Uint8Array, kind: 'png' | 'jpeg'): Promise<RGBAImage>;
+  encodeJpeg(img: RGBAImage, quality: number): Promise<Uint8Array>;
+  encodePng(img: RGBAImage): Promise<Uint8Array>;
+}
+
+export function checkImageHeader(bytes: Uint8Array, kind: 'png' | 'jpeg') {
   const dim = readDimensions(bytes, kind);
   if (!dim || dim.width < 16 || dim.height < 16) throw new Error('Image header is invalid or the image is too small.');
   if (dim.width * dim.height > MAX_PIXELS) throw new Error(`Image is ${dim.width}×${dim.height}. The limit is 40 megapixels.`);
-  if (kind === 'png') {
-    const png = PNG.sync.read(Buffer.from(bytes));
-    return { width: png.width, height: png.height, data: new Uint8Array(png.data) };
-  }
-  const d = jpeg.decode(bytes, { useTArray: true, maxResolutionInMP: 40, maxMemoryUsageInMB: 512 });
-  return { width: d.width, height: d.height, data: new Uint8Array(d.data) };
+  return dim;
 }
-
-export const encodePng = (img: RGBAImage) => {
-  const png = new PNG({ width: img.width, height: img.height });
-  png.data = Buffer.from(img.data);
-  return new Uint8Array(PNG.sync.write(png));
-};
-
-export const encodeJpeg = (img: RGBAImage, quality: number) =>
-  new Uint8Array(jpeg.encode({ data: img.data, width: img.width, height: img.height }, quality).data);
 
 function downscale(img: RGBAImage, maxSide: number): RGBAImage {
   const k = Math.min(1, maxSide / Math.max(img.width, img.height));
@@ -188,7 +178,10 @@ export function analyzeGarmentImage(source: RGBAImage): ImageAnalysis {
     dist[i] = Math.sqrt(0.3 * r * r + 0.59 * g * g + 0.11 * b * b);
     if (dist[i] > maxD) maxD = dist[i];
   }
-  const thr = Math.max(14, otsu(dist, maxD));
+  // On a plain background, anything clearly off the background colour is garment. This keeps pale stripes on dark
+  // fabric, which a two-cluster Otsu split would throw away. Otsu is the fallback for busy backgrounds.
+  const spread = (dev[0] + dev[1] + dev[2]) / 3;
+  const thr = uniformity > 0.7 ? Math.max(18, spread * 3 + 12) : Math.max(14, otsu(dist, maxD));
   let mask = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) mask[i] = dist[i] > thr ? 1 : 0;
   // Close small gaps, keep the largest connected region, then fill holes.
