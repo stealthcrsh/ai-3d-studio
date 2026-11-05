@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CLIPS } from '../core/avatar.ts';
+import { makeZip } from '../core/zip.ts';
 import type { EditProposal } from '../core/edits.ts';
 import type { HoodieParams } from '../core/params.ts';
 import { bytesText } from '../engine/platform.ts';
@@ -94,6 +95,27 @@ export const api = {
 const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', glb: 'model/gltf-binary', json: 'application/json', txt: 'text/plain', py: 'text/plain', obj: 'text/plain', mtl: 'text/plain' };
 const mimeOf = (name: string) => MIME[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
 
+interface HostDownloads {
+  save(req: { filename: string; data: Blob }): Promise<unknown>;
+}
+
+/** Inside a hosted viewer, saves go through its confirmed download prompt. On a plain website, a normal link. */
+async function saveBytes(name: string, data: Uint8Array) {
+  const blob = new Blob([data.slice()], { type: mimeOf(name) });
+  const host = (globalThis as unknown as { claude?: { use(n: string): Promise<HostDownloads | null> } }).claude;
+  const downloads = host ? await host.use('downloads') : null;
+  if (downloads) {
+    await downloads.save({ filename: name, data: blob });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
 export const files = {
   bytes: async (pid: string, rel: string) => {
     const b = await studio.readFile(pid, rel);
@@ -106,18 +128,10 @@ export const files = {
     return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
   },
   url: async (pid: string, rel: string) => URL.createObjectURL(new Blob([(await files.bytes(pid, rel)).slice()], { type: mimeOf(rel) })),
-  download: async (pid: string, rel: string, name: string) => {
-    const url = await files.url(pid, rel);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-  },
-  open: async (pid: string, rel: string) => {
-    const url = await files.url(pid, rel);
-    window.open(url, '_blank', 'noopener');
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  download: async (pid: string, rel: string, name: string) => saveBytes(name, await files.bytes(pid, rel)),
+  downloadZip: async (pid: string, dir: string, names: string[], zipName: string) => {
+    const entries = await Promise.all(names.map(async (name) => ({ name, data: await files.bytes(pid, `${dir}/${name}`) })));
+    await saveBytes(zipName, makeZip(entries));
   },
 };
 

@@ -1,0 +1,118 @@
+{
+ "format": "blender",
+ "bytes": 8539044,
+ "sha256": "196c46ec60cfcf55e5a4415933f4c9256bd30c7e75f8517d907aca838a0ba223",
+ "status": "unverified",
+ "validators": [
+  {
+   "name": "Khronos glTF Validator",
+   "version": "2.0.0-dev.3.10",
+   "passed": true,
+   "detail": {
+    "errors": 0,
+    "warnings": 13,
+    "infos": 0,
+    "sample": [
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+     "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE: Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations."
+    ]
+   }
+  },
+  {
+   "name": "gltf-transform independent parse",
+   "passed": true,
+   "detail": {
+    "partsPresent": true,
+    "nonEmptyGeometry": true,
+    "uvsPresent": true,
+    "materialsPresent": true,
+    "texturesEmbedded": true,
+    "avatarSkinned": true,
+    "clipPresent": true,
+    "morphFramesMatch": true,
+    "weightChannelsPresent": true
+   }
+  },
+  {
+   "name": "Opened in Blender",
+   "passed": false,
+   "notRun": true,
+   "detail": "Blender is not part of this browser-only product. It has not opened this file."
+  }
+ ],
+ "expected": {
+  "parts": [
+   "Body_Front",
+   "Body_Back",
+   "Sleeve_L",
+   "Cuff_L",
+   "Sleeve_R",
+   "Cuff_R",
+   "Hem_Rib",
+   "Hood_L",
+   "Hood_R",
+   "Pocket",
+   "Drawcord_L",
+   "Drawcord_R"
+  ],
+  "clip": "walk",
+  "frames": 33,
+  "avatar": true
+ },
+ "observed": {
+  "nodes": 35,
+  "missingParts": [],
+  "materials": [
+   "Fabric_Main",
+   "Fabric_Rib",
+   "Drawcord",
+   "Avatar_Mannequin"
+  ],
+  "animations": [
+   {
+    "name": "walk",
+    "channels": 32,
+    "weightChannels": 12
+   }
+  ],
+  "morphCounts": [
+   33
+  ],
+  "textures": [
+   {
+    "name": "Garment_BaseColor",
+    "mime": "image/jpeg",
+    "size": [
+     2048,
+     2048
+    ]
+   },
+   {
+    "name": "Garment_Normal",
+    "mime": "image/jpeg",
+    "size": [
+     2048,
+     2048
+    ]
+   }
+  ],
+  "skins": 1,
+  "totalVerts": 22876,
+  "hemBoundsY": [
+   0.7576268315315247,
+   0.9389059543609619
+  ]
+ },
+ "warnings": [
+  "13 validator warnings. See the report.",
+  "This file has not been opened in Blender."
+ ],
+ "durationMs": 56,
+ "checkedAt": "2026-11-05T07:45:29.195Z"
+}

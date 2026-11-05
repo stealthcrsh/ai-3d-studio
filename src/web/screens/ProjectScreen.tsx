@@ -126,9 +126,7 @@ function Workspace({ project, version, tab, job, reload, health }: { project: Pr
         const meta = await files.json<SceneMeta>(project.id, sceneFile);
         const heat = version?.artifacts.heat ? await files.floats(project.id, version.artifacts.heat) : null;
         if (stop) return;
-        const url = await files.url(project.id, artifact);
-        const applied = await vp.loadModel(url, meta, heat);
-        URL.revokeObjectURL(url);
+        const applied = await vp.loadModel(await files.bytes(project.id, artifact), meta, heat);
         if (stop || !applied) return;
         setScene(meta);
         setLoadedKey(key);

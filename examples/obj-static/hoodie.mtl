@@ -1,0 +1,17 @@
+newmtl Fabric_Main
+Kd 0.3294 0.4000 0.4706
+Ks 0.02 0.02 0.02
+Ns 10
+map_Kd hoodie_basecolor.jpg
+
+newmtl Fabric_Rib
+Kd 0.2784 0.3412 0.4000
+Ks 0.02 0.02 0.02
+Ns 10
+map_Kd hoodie_basecolor.jpg
+
+newmtl Drawcord
+Kd 0.9020 0.8902 0.8549
+Ks 0.02 0.02 0.02
+Ns 10
+map_Kd hoodie_basecolor.jpg

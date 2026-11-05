@@ -1,0 +1,66 @@
+{
+ "format": "obj",
+ "bytes": 900379,
+ "sha256": "a90028d3b9960e1f320901b650c8c30698c632d03398d0b5d0294a2a7b0b76a9",
+ "status": "passed",
+ "validators": [
+  {
+   "name": "Independent OBJ line parser",
+   "passed": true,
+   "detail": {
+    "v": 5849,
+    "vt": 5849,
+    "vn": 5849,
+    "f": 10664,
+    "outOfRange": 0
+   }
+  },
+  {
+   "name": "Opened in Blender",
+   "passed": false,
+   "notRun": true,
+   "detail": "Not run in this browser-only product."
+  }
+ ],
+ "expected": {
+  "parts": [
+   "Body_Front",
+   "Body_Back",
+   "Sleeve_L",
+   "Cuff_L",
+   "Sleeve_R",
+   "Cuff_R",
+   "Hem_Rib",
+   "Hood_L",
+   "Hood_R",
+   "Pocket",
+   "Drawcord_L",
+   "Drawcord_R"
+  ],
+  "note": "Static geometry only. No rig, animation or physics."
+ },
+ "observed": {
+  "objects": [
+   "Body_Front",
+   "Body_Back",
+   "Sleeve_L",
+   "Cuff_L",
+   "Sleeve_R",
+   "Cuff_R",
+   "Hem_Rib",
+   "Hood_L",
+   "Hood_R",
+   "Pocket",
+   "Drawcord_L",
+   "Drawcord_R"
+  ],
+  "missing": [],
+  "mtl": true,
+  "texture": true
+ },
+ "warnings": [
+  "This file has not been opened in Blender or another 3D application."
+ ],
+ "durationMs": 4,
+ "checkedAt": "2026-11-05T07:45:28.632Z"
+}

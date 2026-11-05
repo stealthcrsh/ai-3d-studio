@@ -168,7 +168,7 @@ export function SetupScreen({ project, reload, health }: { project: ProjectFull;
   };
   const cat = health?.catalog;
   const hasImage = project.references.some((r) => r.usage === 'used-by-pipeline');
-  const ESTIMATE: Record<string, string> = { preview: 'About 3 seconds', standard: 'About 15 seconds', high: 'About 1 to 2 minutes' };
+  const ESTIMATE: Record<string, string> = { preview: 'About 2 seconds', standard: 'About 10 seconds', high: 'About 30 seconds' };
   return (
     <main className="page" data-screen="S03">
       <div className="page-head">

@@ -43,7 +43,12 @@ export class Viewport {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(28, 1, 0.05, 50);
   controls: OrbitControls;
-  private loader = new GLTFLoader();
+  // Parsed from memory, with embedded textures read through image elements. This needs no network-style fetch of
+  // blob URLs, which strict content security policies block.
+  private loader = new GLTFLoader().register((parser) => {
+    parser.textureLoader = new THREE.TextureLoader(parser.options.manager);
+    return { name: 'studio-image-textures' };
+  });
   private model: THREE.Object3D | null = null;
   parts = new Map<string, THREE.Mesh>();
   private original = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
@@ -198,9 +203,10 @@ export class Viewport {
     if (notify) this.onSelect?.(part);
   }
 
-  async loadModel(url: string, meta: SceneMeta | null, heat: Float32Array | null) {
+  async loadModel(glb: Uint8Array, meta: SceneMeta | null, heat: Float32Array | null) {
     const token = ++this.loadToken;
-    const gltf = await this.loader.loadAsync(url);
+    const buffer = glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength) as ArrayBuffer;
+    const gltf = await this.loader.parseAsync(buffer, '');
     if (token !== this.loadToken) return false;
     // The previous asset stays on screen until the new one is ready, so inspection is never interrupted.
     if (this.model) this.scene.remove(this.model);

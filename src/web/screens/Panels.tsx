@@ -687,9 +687,10 @@ export function ExportPanel({ ctx }: { ctx: PanelCtx }) {
             <div key={e.id} className="stack" style={{ borderTop: '1px solid var(--line)', paddingTop: 8 }}>
               <div className="row between"><strong>{e.format === 'blender' ? 'For Blender' : e.format.toUpperCase()}{e.clip ? `, ${e.clip}` : ''}</strong><span className={`badge ${e.status === 'unverified' ? 'warn' : e.status}`}>{e.status.toUpperCase()}</span></div>
               {e.message && <p className="dim">{e.message}</p>}
-              {e.files.map((f) => <button key={f.name} className="btn sm" style={{ textAlign: 'left', justifyContent: 'space-between', display: 'flex' }} onClick={() => void files.download(project.id, `${e.dir}/${f.name}`, f.name)}><span>Download {f.name}</span><span className="dim">{bytes(f.bytes)}</span></button>)}
+              <button className="btn sm" data-testid={`download-${e.format}`} onClick={() => { setError(null); void files.downloadZip(project.id, e.dir, e.files.map((f) => f.name), `hoodie-${e.format}${e.clip ? `-${e.clip}` : ''}.zip`).catch((err: { code?: string; message?: string }) => { if (err?.code !== 'declined') setError(err?.message ?? 'The download could not start.'); }); }}>Download ZIP</button>
+              <div className="dim">{e.files.map((f) => `${f.name}, ${bytes(f.bytes)}`).join(' · ')}</div>
               {rep?.validators.map((v) => <div key={v.name} className="row between"><span className="muted">{v.name}{v.version ? ` ${v.version}` : ''}</span><span className={v.passed ? 'yes' : v.notRun ? 'part' : ''} style={!v.passed && !v.notRun ? { color: 'var(--bad)' } : undefined}>{v.passed ? 'Passed' : v.notRun ? 'Not run' : 'Failed'}</span></div>)}
-              <button className="btn sm ghost" onClick={() => void files.download(project.id, e.report, `report-${e.format}.json`)}>Download validation report, JSON</button>
+              <button className="btn sm ghost" onClick={() => void files.download(project.id, e.report, `report-${e.format}.json`).catch(() => undefined)}>Download validation report, JSON</button>
             </div>
           );
         })}

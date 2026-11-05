@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { makeZip } from '../src/core/zip.ts';
 import { buildAvatarMesh, buildSkeleton, clipPose, forwardKinematics, restPose, skinPoint } from '../src/core/avatar.ts';
 import { bake, drape, diagnostics } from '../src/core/cloth.ts';
 import { parseEdit, restLocality } from '../src/core/edits.ts';
@@ -8,6 +11,20 @@ import { DEFAULT_PARAMS, FABRICS, geometryKey, physicsKey, validateParams, type 
 import { runGarmentQa } from '../src/core/qa.ts';
 
 const sk = buildSkeleton('regular');
+
+describe('zip', () => {
+  test('a ZIP unpacks with the system unzip tool, byte for byte', async () => {
+    const data = new TextEncoder().encode('hello hoodie');
+    const bin = new Uint8Array(70000).map((_, i) => i % 251);
+    const zip = makeZip([{ name: 'a.txt', data }, { name: 'b.glb', data: bin }]);
+    const dir = mkdtempSync('/Volumes/AI-Workspace/Temp/Development/zip-test-');
+    writeFileSync(join(dir, 't.zip'), zip);
+    const r = Bun.spawnSync(['unzip', '-o', '-q', join(dir, 't.zip'), '-d', dir]);
+    expect(r.exitCode).toBe(0);
+    expect(readFileSync(join(dir, 'a.txt'), 'utf8')).toBe('hello hoodie');
+    expect(new Uint8Array(readFileSync(join(dir, 'b.glb')))).toEqual(bin);
+  });
+});
 
 describe('garment structure', () => {
   const g = buildGarment(DEFAULT_PARAMS, 'preview', sk);
