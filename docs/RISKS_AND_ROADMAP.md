@@ -21,7 +21,7 @@ If AI reconstruction is added later, `research/market-cost.md` estimates **$0.10
 | Real photos may measure poorly | **High** | Warnings, confidence, everything editable | A consented photo benchmark, 30 images proposed |
 | "AI" product has no AI yet | **High** | DEMO BASELINE on every version and file | A connected provider, which conflicts with browser-only unless a server is added |
 | Browser-only blocks heavy AI models | **High** | Provider contract ready | Owner decision on a thin server or an in-browser model |
-| Hosted link untested in its frame | Medium | Removed blob fetches, local run passes | Owner opens it once |
+| Downloads untested in the hosted frame | Low | The link opens and generates, owner confirmed 2026-11-05 | Owner exports a ZIP once from the link |
 | Clearing browser data deletes all work | Medium | Requests persistent storage, warns if blocked | Add project export and import |
 | Other browsers and weak devices untested | Medium | Clear WebGL and storage errors | Test Safari, Firefox, Windows, older laptops |
 | Frame rate unmeasured | Medium | None | Measure with a visible window |
@@ -35,7 +35,7 @@ Order is proposed. Each step needs its own measured fixtures before any claim is
 
 **Now**
 
-1. Open the link and try the sample. Then try a real hoodie photo.
+1. Done 2026-11-05: the link opens and generates the sample. Next, export a ZIP from the link and try a real hoodie photo.
 2. Open an exported GLB in Blender, on any machine that has it, and report what you see.
 3. Decide how AI generation should work given browser-only. See below.
 

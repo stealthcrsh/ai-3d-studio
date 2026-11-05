@@ -22,7 +22,7 @@
 | 14 | Each stage in its own Web Worker | PROPOSED DEFAULT | No | Small startup cost per stage | Cancel stopped a running solver in 6 ms |
 | 15 | GLB and OBJ only. No FBX or USD | PROPOSED DEFAULT | No | Some pipelines need them | Nothing is offered untested |
 | 16 | Quality thresholds | **NEEDS APPROVAL** | **Yes** | Could be too lax or too strict | Uncalibrated, labelled PROPOSED in the UI |
-| 17 | Publish as a private Claude Artifact | PROPOSED DEFAULT | No, private | Not tested in the hosted frame | Owner can share or delete it |
+| 17 | Publish as a private Claude Artifact | PROPOSED DEFAULT | No, private | Owner confirmed 2026-11-05 that it opens and generates the sample. Downloads there unconfirmed | Owner can share or delete it |
 | 18 | Which business owns this product | **NEEDS APPROVAL** | **Yes** | Must stay separate from Blue Tower and CRSH | Not stated in the brief. Stored under `Projects/Claude` |
 
 ## Architecture record

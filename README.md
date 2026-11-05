@@ -8,7 +8,7 @@ A browser-only studio that turns hoodie reference images into editable 3D garmen
 
 ## Open it
 
-Hosted private link: https://claude.ai/artifact/MtDKxvFf9H7sEips5AnpNy. Only the owner can open it until it is shared from its Share menu. It has not been tested inside the hosted frame yet, because the test browser was not signed in.
+Hosted private link: https://claude.ai/artifact/MtDKxvFf9H7sEips5AnpNy. Only the owner can open it until it is shared from its Share menu. On 2026-11-05 the owner confirmed it opens and generates the sample hoodie. Its download buttons have not been confirmed yet.
 
 To run it from this folder:
 
@@ -50,7 +50,7 @@ Edit commands such as "make the sleeves 3 cm shorter" show which parts change be
 | Real `.blend` file | **Not delivered** | Only Blender can write one. The owner chose browser-only with no Blender download, on 2026-11-05 |
 | "For Blender" package | **Untested** | The same GLB plus a script to run in your own Blender. It has never been run |
 | Viewport frame rate | **Not measured** | The test pane was hidden and throttled, so its readings are not valid |
-| Hosted link | **Published, not tested in its frame** | The same build passed locally in the browser |
+| Hosted link | **Works, owner confirmed** | Opens and generates the sample hoodie. Downloads there not confirmed |
 | Reduced-motion support | **Coded, not exercised** | No automatic motion runs, and CSS animation is disabled by the media query |
 
 ## Supported inputs and outputs

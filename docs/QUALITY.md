@@ -32,7 +32,9 @@ Chromium-based browser pane in the Claude desktop app, against the built static 
 | Network | All resource requests stayed on the app's own origin |
 | Console | No errors in final runs |
 
-Not exercised: download buttons in a browser, reduced-motion mode, screen readers, Safari, Firefox, Windows, weak or integrated GPUs, and the hosted Artifact frame.
+Hosted Artifact frame: the owner confirmed on 2026-11-05 that the link opens and generates the sample hoodie. No measurements were taken there.
+
+Not exercised: download buttons in a browser, reduced-motion mode, screen readers, Safari, Firefox, Windows, and weak or integrated GPUs.
 
 ## Benchmark set
 
