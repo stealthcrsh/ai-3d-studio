@@ -27,6 +27,41 @@ describe('file checks', () => {
   });
 });
 
+describe('WebP headers', () => {
+  // Header-only byte layouts from the WebP container spec. Decoding is left to the browser and checked there.
+  const webp = (chunk: string, body: number[]) => {
+    const b = new Uint8Array(40);
+    b.set([...'RIFF'].map((c) => c.charCodeAt(0)), 0);
+    b.set([...`WEBP${chunk}`].map((c) => c.charCodeAt(0)), 8);
+    b.set(body, 20);
+    return b;
+  };
+  const lossy = webp('VP8 ', [0, 0, 0, 0x9d, 0x01, 0x2a, 0xe8, 0x03, 0xe2, 0x04]);
+  const lossless = (() => {
+    const v = (999 & 0x3fff) | ((1249 & 0x3fff) << 14);
+    return webp('VP8L', [0x2f, v & 0xff, (v >>> 8) & 0xff, (v >>> 16) & 0xff, (v >>> 24) & 0xff]);
+  })();
+  const extended = (flags: number) => webp('VP8X', [flags, 0, 0, 0, 0xe7, 0x03, 0x00, 0xe1, 0x04, 0x00]);
+  test('lossy, lossless and extended sizes are read', () => {
+    for (const b of [lossy, lossless, extended(0x28)]) {
+      expect(sniff(b, 'x.png')).toBe('webp');
+      expect(readDimensions(b, 'webp')).toEqual({ width: 1000, height: 1250 });
+      expect(checkImageHeader(b, 'webp')).toEqual({ width: 1000, height: 1250 });
+    }
+  });
+  test('animated WebP is refused', () => {
+    expect(() => checkImageHeader(extended(0x02), 'webp')).toThrow('Animated WebP');
+  });
+  test('an oversized WebP header is refused before decoding', () => {
+    const b = extended(0);
+    b.set([0xff, 0xff, 0x00, 0xff, 0xff, 0x00], 24);
+    expect(() => checkImageHeader(b, 'webp')).toThrow('40 megapixels');
+  });
+  test('a WebP with an unknown first chunk is refused', () => {
+    expect(() => checkImageHeader(webp('JUNK', []), 'webp')).toThrow('header is invalid');
+  });
+});
+
 describe('silhouette measurement against known ground truth', () => {
   // Tolerances are PROPOSED. Fixtures are synthetic, so this tests the code, not real photo accuracy.
   for (const [file, wl, sl] of [['hoodie_front.png', 0.92, 0.85], ['hoodie_patterned_front.png', 0.84, 0.9], ['hoodie_print_front.png', 1.02, 0.78]] as const) {

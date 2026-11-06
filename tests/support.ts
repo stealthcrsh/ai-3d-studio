@@ -11,6 +11,8 @@ export const nodeCodec: ImageCodec = {
       const p = PNG.sync.read(Buffer.from(bytes));
       return { width: p.width, height: p.height, data: new Uint8Array(p.data) };
     }
+    // No WebP decoder in the test runner. WebP decoding is the browser's and is checked there.
+    if (kind === 'webp') throw new Error('WebP decoding needs a browser.');
     const d = jpeg.decode(bytes, { useTArray: true });
     return { width: d.width, height: d.height, data: new Uint8Array(d.data) };
   },

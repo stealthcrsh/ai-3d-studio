@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type MutableRefObj
 import { api, bytes, cm, files, useFileUrl, type EditProposal, type ExportFormat, type Health, type HoodieParams, type Job, type ProjectFull, type Version } from '../api.ts';
 import type { SceneMeta, ViewMode, Viewport } from '../viewport.ts';
 import type { QaReport } from '../../core/qa.ts';
+import { isImageKind } from '../../core/vision.ts';
 
 export interface MotionState {
   playing: boolean;
@@ -165,7 +166,7 @@ function StoredFigure({ pid, rel, alt, caption }: { pid: string; rel: string; al
 }
 
 function References({ ctx }: { ctx: PanelCtx }) {
-  const refs = ctx.project.references.filter((r) => r.kind === 'png' || r.kind === 'jpeg');
+  const refs = ctx.project.references.filter((r) => isImageKind(r.kind));
   return (
     <div className="section">
       <div className="row between"><h3>References</h3><a href={`#/p/${ctx.project.id}/import`} className="dim">Manage</a></div>

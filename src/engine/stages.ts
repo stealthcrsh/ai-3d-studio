@@ -9,7 +9,7 @@ import { writeGlb, writeObj } from '../core/gltf.ts';
 import { runGarmentQa } from '../core/qa.ts';
 import { PART_LABEL, QUALITY, type BodyShapeId, type ClipId, type HoodieParams, type PinGroup, type Quality } from '../core/params.ts';
 import { bakeTextures, type BakeSources } from '../core/texture.ts';
-import { analyzeGarmentImage, checkImageHeader, sniff, type ImageAnalysis } from '../core/vision.ts';
+import { analyzeGarmentImage, checkImageHeader, isImageKind, sniff, type ImageAnalysis } from '../core/vision.ts';
 import { readJson, textBytes, type ImageCodec, type Storage } from './platform.ts';
 import { BLENDER_README, MAKE_BLEND_PY } from './blenderScript.ts';
 import type { GlbExpectation } from './validate.ts';
@@ -72,7 +72,7 @@ export async function executeStage(task: StageTask, storage: Storage, codec: Ima
   if (task.stage === 'analyze') {
     const bytes = await read(task.referencePath!);
     const kind = sniff(bytes);
-    if (kind !== 'png' && kind !== 'jpeg') throw new Error('Only PNG and JPEG images can be analysed.');
+    if (!isImageKind(kind)) throw new Error('Only PNG, JPEG and WebP images can be analysed.');
     checkImageHeader(bytes, kind);
     const a = analyzeGarmentImage(await codec.decode(bytes, kind));
     const { mask, ...rest } = a;
@@ -107,7 +107,7 @@ export async function executeStage(task: StageTask, storage: Storage, codec: Ima
       if (!ref) continue;
       const bytes = await read(ref.path);
       const kind = sniff(bytes);
-      if (kind !== 'png' && kind !== 'jpeg') continue;
+      if (!isImageKind(kind)) continue;
       const analysis = (await readJson<ImageAnalysis>(storage, `${ref.analysis}/analysis.json`))!;
       sources[view] = { image: await codec.decode(bytes, kind), analysis: { ...analysis, mask: await read(`${ref.analysis}/mask.bin`) } };
     }

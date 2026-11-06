@@ -27,11 +27,27 @@ export function sniff(bytes: Uint8Array, filename = ''): Sniffed {
   return 'unknown';
 }
 
-export function readDimensions(bytes: Uint8Array, kind: 'png' | 'jpeg'): { width: number; height: number } | null {
+/** Still images the pipeline measures and projects. Decoding is the platform's job, so each kind needs codec support. */
+export type ImageKind = 'png' | 'jpeg' | 'webp';
+export const isImageKind = (kind: string): kind is ImageKind => kind === 'png' || kind === 'jpeg' || kind === 'webp';
+
+export function readDimensions(bytes: Uint8Array, kind: ImageKind): { width: number; height: number } | null {
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (kind === 'png') {
     if (bytes.length < 24) return null;
     return { width: dv.getUint32(16), height: dv.getUint32(20) };
+  }
+  if (kind === 'webp') {
+    // The first chunk after the RIFF header holds the size: lossy VP8, lossless VP8L, or extended VP8X.
+    if (bytes.length < 30) return null;
+    const chunk = String.fromCharCode(...bytes.slice(12, 16));
+    if (chunk === 'VP8 ' && bytes[23] === 0x9d && bytes[24] === 0x01 && bytes[25] === 0x2a) return { width: dv.getUint16(26, true) & 0x3fff, height: dv.getUint16(28, true) & 0x3fff };
+    if (chunk === 'VP8L' && bytes[20] === 0x2f) {
+      const b = dv.getUint32(21, true);
+      return { width: (b & 0x3fff) + 1, height: ((b >>> 14) & 0x3fff) + 1 };
+    }
+    if (chunk === 'VP8X') return { width: (bytes[24] | (bytes[25] << 8) | (bytes[26] << 16)) + 1, height: (bytes[27] | (bytes[28] << 8) | (bytes[29] << 16)) + 1 };
+    return null;
   }
   let i = 2;
   while (i + 9 < bytes.length) {
@@ -48,12 +64,14 @@ export function readDimensions(bytes: Uint8Array, kind: 'png' | 'jpeg'): { width
 
 /** Pixel access is supplied by the platform: canvas in the browser, pure JS libraries in the test runner. */
 export interface ImageCodec {
-  decode(bytes: Uint8Array, kind: 'png' | 'jpeg'): Promise<RGBAImage>;
+  decode(bytes: Uint8Array, kind: ImageKind): Promise<RGBAImage>;
   encodeJpeg(img: RGBAImage, quality: number): Promise<Uint8Array>;
   encodePng(img: RGBAImage): Promise<Uint8Array>;
 }
 
-export function checkImageHeader(bytes: Uint8Array, kind: 'png' | 'jpeg') {
+export function checkImageHeader(bytes: Uint8Array, kind: ImageKind) {
+  // Bit 1 of the VP8X flags marks an animation. Only one frame would be measured, so refuse it rather than guess.
+  if (kind === 'webp' && String.fromCharCode(...bytes.slice(12, 16)) === 'VP8X' && bytes[20] & 0x02) throw new Error('Animated WebP is not supported. Use a still image.');
   const dim = readDimensions(bytes, kind);
   if (!dim || dim.width < 16 || dim.height < 16) throw new Error('Image header is invalid or the image is too small.');
   if (dim.width * dim.height > MAX_PIXELS) throw new Error(`Image is ${dim.width}×${dim.height}. The limit is 40 megapixels.`);

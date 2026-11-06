@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, bytes, cm, useFileUrl, type Health, type Project, type ProjectFull, type ReconstructionResult } from '../api.ts';
 import { navigate } from '../App.tsx';
+import { isImageKind } from '../../core/vision.ts';
 
 const FORMATS: [string, string, string][] = [
-  ['PNG, JPEG', 'Front and back views are measured and projected onto the garment', 'Used'],
+  ['PNG, JPEG, WebP', 'Front and back views are measured and projected onto the garment', 'Used'],
   ['MP4, MOV video', 'Saved with the project, not used yet', 'Stored only'],
   ['PDF blueprint or CAD drawing', 'Saved with the project, not used yet', 'Stored only'],
   ['GLB, OBJ 3D model', 'Stored and never opened', 'Stored only'],
   ['TXT notes', 'Saved with the project, not used yet', 'Stored only'],
-  ['WebP, HEIC, GIF', 'Convert to PNG or JPEG first', 'Rejected'],
+  ['HEIC, GIF, animated WebP', 'Convert to PNG, JPEG or still WebP first', 'Rejected'],
 ];
 
 function StoredImg({ pid, rel, alt, className }: { pid: string; rel: string; alt: string; className?: string }) {
@@ -73,7 +74,7 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
       <div className="two-col">
         <div className="stack-lg">
           <label className={`drop ${over ? 'over' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); void upload([...e.dataTransfer.files]); }}>
-            <input type="file" multiple hidden accept=".png,.jpg,.jpeg,.mp4,.mov,.pdf,.glb,.obj,.txt,.md" onChange={(e) => { void upload([...(e.target.files ?? [])]); e.target.value = ''; }} />
+            <input type="file" multiple hidden accept=".png,.jpg,.jpeg,.webp,.mp4,.mov,.pdf,.glb,.obj,.txt,.md" onChange={(e) => { void upload([...(e.target.files ?? [])]); e.target.value = ''; }} />
             <h2>{busy ? 'Checking and measuring files…' : 'Drop files here, or click to choose'}</h2>
             <p className="muted" style={{ marginTop: 4 }}>Up to {health?.catalog.uploads.maxFiles ?? 12} files, {Math.round((health?.catalog.uploads.maxBytes ?? 3e7) / 1e6 / 1.048)} MB each, 40 megapixels per image.</p>
           </label>
@@ -85,7 +86,7 @@ export function ImportScreen({ project, reload, health }: { project: ProjectFull
             <div className="thumbs">
               {project.references.map((r) => {
                 const a = r.analysis as undefined | { ok: boolean; confidence: number; warnings: string[]; medianColor: string; hoodDetected: boolean; maskUrl: string };
-                const image = r.kind === 'png' || r.kind === 'jpeg';
+                const image = isImageKind(r.kind);
                 return (
                   <div className="thumb" key={r.id}>
                     <div className="pic">

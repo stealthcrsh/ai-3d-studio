@@ -18,7 +18,8 @@ Chromium-based browser pane in the Claude desktop app, against the built static 
 
 | Scenario | Result |
 |---|---|
-| Fake, empty, truncated and WebP uploads | All 4 rejected with clear messages. No reference added |
+| Fake, empty, truncated and WebP uploads | All 4 rejected with clear messages. No reference added. WebP was accepted from 2026-11-06, see below |
+| Still WebP product photos, front and back, 2026-11-06 | Both accepted and measured, arms-down warning shown, hoodie generated with front print projected. No console errors |
 | Cancel a running solver | Worker terminated. Job cancelled in 6 ms. No partial output |
 | Retry after cancel | Completed. Earlier stages reused |
 | Reload the page mid-solve | Job shown as interrupted. Resume completed in 10.6 s and reused 2 stages |

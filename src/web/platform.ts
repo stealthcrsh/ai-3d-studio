@@ -81,7 +81,7 @@ export class MemoryStorage implements Storage {
 /** Pixel decoding and encoding through the browser's own image code. Works inside Workers. */
 export const canvasCodec: ImageCodec = {
   async decode(bytes, kind) {
-    const bitmap = await createImageBitmap(new Blob([bytes.slice()], { type: kind === 'png' ? 'image/png' : 'image/jpeg' }));
+    const bitmap = await createImageBitmap(new Blob([bytes.slice()], { type: `image/${kind}` }));
     const c = new OffscreenCanvas(bitmap.width, bitmap.height);
     const g = c.getContext('2d', { willReadFrequently: true })!;
     g.drawImage(bitmap, 0, 0);

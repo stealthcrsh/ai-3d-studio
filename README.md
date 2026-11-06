@@ -55,9 +55,9 @@ Edit commands such as "make the sleeves 3 cm shorter" show which parts change be
 
 ## Supported inputs and outputs
 
-- **Used:** PNG and JPEG, front and back views, up to 30 MB and 40 megapixels. Measurements for body length, chest width and sleeve length.
+- **Used:** PNG, JPEG and still WebP, front and back views, up to 30 MB and 40 megapixels. Measurements for body length, chest width and sleeve length. WebP is decoded by the browser, so it has been checked in a Chromium-based browser only.
 - **Stored but not used yet:** MP4, MOV, PDF, GLB, OBJ, TXT.
-- **Rejected:** WebP, HEIC, GIF, and anything whose bytes do not match a known type.
+- **Rejected:** HEIC, GIF, animated WebP, and anything whose bytes do not match a known type.
 - **Output:** GLB with skinned avatar, skeletal clips and baked cloth as morph targets. OBJ static with MTL and texture. See [docs/QUALITY.md](docs/QUALITY.md).
 
 ## Costs

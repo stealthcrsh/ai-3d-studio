@@ -92,7 +92,7 @@ export const api = {
   retryJob: (id: string, jid: string) => studio.retryJob(id, jid),
 };
 
-const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', glb: 'model/gltf-binary', json: 'application/json', txt: 'text/plain', py: 'text/plain', obj: 'text/plain', mtl: 'text/plain' };
+const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', glb: 'model/gltf-binary', json: 'application/json', txt: 'text/plain', py: 'text/plain', obj: 'text/plain', mtl: 'text/plain' };
 const mimeOf = (name: string) => MIME[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
 
 interface HostDownloads {

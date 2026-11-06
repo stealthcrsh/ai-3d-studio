@@ -1,7 +1,7 @@
 import { BODY_SHAPES, buildSkeleton, CLIPS } from '../core/avatar.ts';
 import { parseEdit, proposalFromPatch, restLocality, type EditProposal } from '../core/edits.ts';
 import { DEFAULT_PARAMS, FABRICS, hashOf, PARAM_META, PART_LABEL, QUALITY, validateParams, type BodyShapeId, type ClipId, type HoodieParams, type PinGroup, type Quality } from '../core/params.ts';
-import { checkImageHeader, MAX_PIXELS, sniff } from '../core/vision.ts';
+import { checkImageHeader, isImageKind, MAX_PIXELS, sniff } from '../core/vision.ts';
 import { JobEngine } from './jobs.ts';
 import { readJson, type StageRunner, type Storage } from './platform.ts';
 import { inferParams, PROVIDERS, type ReconstructionResult } from './providers.ts';
@@ -37,7 +37,7 @@ async function digest(bytes: Uint8Array) {
 
 function classifyReference(kind: string, filename: string, project: Project): { view: ReferenceView; usage: Reference['usage'] } {
   const name = filename.toLowerCase();
-  if (kind === 'png' || kind === 'jpeg') {
+  if (isImageKind(kind)) {
     const taken = new Set(project.references.map((r) => r.view));
     let view: ReferenceView = /back|rear/.test(name) ? 'back' : /front/.test(name) ? 'front' : /side/.test(name) ? 'side' : !taken.has('front') ? 'front' : !taken.has('back') ? 'back' : 'other';
     if (taken.has(view) && (view === 'front' || view === 'back')) view = 'other';
@@ -68,7 +68,7 @@ export class Studio {
       const last = (await this.store.listJobs(p.id))[0];
       cards.push({
         id: p.id, name: p.name, updatedAt: p.updatedAt, references: p.references.length,
-        cover: p.references.find((r) => r.kind === 'png' || r.kind === 'jpeg')?.file ?? null,
+        cover: p.references.find((r) => isImageKind(r.kind))?.file ?? null,
         versions: p.versions.length, tier: p.versions.find((v) => v.id === p.currentVersionId)?.tier ?? 'none',
         label: p.versions.length ? 'DEMO BASELINE' : null, lastJob: last ? { id: last.id, status: last.status, kind: last.kind } : null,
       });
@@ -139,8 +139,8 @@ export class Studio {
     const project = (await this.store.read(id))!;
     if (project.references.length >= MAX_REFS) throw new Error(`A project can hold ${MAX_REFS} reference files.`);
     const kind = sniff(bytes, name);
-    if (kind === 'unknown' || kind === 'webp' || kind === 'gif') throw new Error(`${name} is not a supported file. Use PNG or JPEG for images. WebP, HEIC and GIF are not accepted yet.`);
-    if (kind === 'png' || kind === 'jpeg') {
+    if (kind === 'unknown' || kind === 'gif') throw new Error(`${name} is not a supported file. Use PNG, JPEG or WebP for images. HEIC and GIF are not accepted yet.`);
+    if (isImageKind(kind)) {
       try {
         checkImageHeader(bytes, kind);
       } catch (e) {
@@ -153,7 +153,7 @@ export class Studio {
     const root = projectDir(id);
     await this.storage.writeMany([[`${root}/${stored}`, bytes]]);
     const ref: Reference = { id: refId, filename: name.replace(/[^\w.\- ()]/g, '_').slice(0, 120), kind, view: 'other', sha256: hash, bytes: bytes.length, file: stored, usage: 'stored-not-used', addedAt: new Date().toISOString() };
-    if (kind === 'png' || kind === 'jpeg') {
+    if (isImageKind(kind)) {
       const dirRel = `cache/analyze-${hash.slice(0, 16)}`;
       try {
         if (!(await this.storage.exists(`${root}/${dirRel}/done.json`))) {
