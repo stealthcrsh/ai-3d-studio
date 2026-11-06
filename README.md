@@ -8,9 +8,9 @@ A browser-only studio that turns hoodie reference images into editable 3D garmen
 
 ## Open it
 
-Hosted private link: https://claude.ai/artifact/MtDKxvFf9H7sEips5AnpNy. Only the owner can open it until it is shared from its Share menu. On 2026-11-05 the owner confirmed it opens and generates the sample hoodie. Its download buttons have not been confirmed yet.
+The owner's hosted copy is a private Claude Artifact, so it opens only for people the owner has shared it with. On 2026-11-05 the owner confirmed it opens and generates the sample hoodie. Its download buttons have not been confirmed yet.
 
-To run it from this folder:
+To run it yourself, install [Bun](https://bun.sh) 1.4 or later, clone this repository, and run these from its folder:
 
 ```bash
 bun install

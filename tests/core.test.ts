@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { makeZip } from '../src/core/zip.ts';
 import { buildAvatarMesh, buildSkeleton, clipPose, forwardKinematics, restPose, skinPoint } from '../src/core/avatar.ts';
@@ -17,7 +18,8 @@ describe('zip', () => {
     const data = new TextEncoder().encode('hello hoodie');
     const bin = new Uint8Array(70000).map((_, i) => i % 251);
     const zip = makeZip([{ name: 'a.txt', data }, { name: 'b.glb', data: bin }]);
-    const dir = mkdtempSync('/Volumes/AI-Workspace/Temp/Development/zip-test-');
+    // STUDIO_TEST_TMP picks the scratch folder, for example from an untracked .env. Defaults to the system temp folder.
+    const dir = mkdtempSync(join(process.env.STUDIO_TEST_TMP || tmpdir(), 'zip-test-'));
     writeFileSync(join(dir, 't.zip'), zip);
     const r = Bun.spawnSync(['unzip', '-o', '-q', join(dir, 't.zip'), '-d', dir]);
     expect(r.exitCode).toBe(0);
