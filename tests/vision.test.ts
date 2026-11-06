@@ -38,6 +38,12 @@ describe('silhouette measurement against known ground truth', () => {
       expect(a.hoodDetected).toBe(true);
     });
   }
+  test('sleeves resting against the body do not widen the chest', async () => {
+    const a = await analyze('hoodie_arms_down_front.png');
+    expect(a.ok).toBe(true);
+    expect(Math.abs(a.ratios.widthToLength - 0.95) / 0.95).toBeLessThan(0.1);
+    expect(a.warnings.join(' ')).toContain('estimated from the hem');
+  });
   test('JPEG and PNG of the same image agree closely', async () => {
     expect(Math.abs((await analyze('hoodie_front.jpg')).ratios.widthToLength - (await analyze('hoodie_front.png')).ratios.widthToLength)).toBeLessThan(0.02);
   });

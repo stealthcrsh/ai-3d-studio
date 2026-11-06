@@ -1,6 +1,6 @@
 import { DEFAULT_PARAMS, PARAM_META, type HoodieParams, type NumericParam } from '../core/params.ts';
 import { clamp } from '../core/math.ts';
-import { colorDistance, type ImageAnalysis } from '../core/vision.ts';
+import { colorDistance, HEM_TO_BODY, type ImageAnalysis } from '../core/vision.ts';
 import type { ParamNote, Project, Reference } from './store.ts';
 
 /**
@@ -80,7 +80,7 @@ export function inferParams(project: Project, analyses: Partial<Record<'front' |
     set('bodyWidth', width, 'From the width-to-length ratio of the outline.');
     set('shoulderWidth', p.bodyWidth * 0.92, 'Estimated as a fixed share of body width.');
     set('sleeveWidth', p.bodyWidth * 0.41, 'Estimated as a fixed share of body width.');
-    set('hemWidth', p.bodyWidth * 0.83, 'Estimated as a fixed share of body width.');
+    set('hemWidth', p.bodyWidth * HEM_TO_BODY, 'Estimated as a fixed share of body width.');
     if (source.ratios.sleeveToLength > 0.25) set('sleeveLength', source.ratios.sleeveToLength * L, 'From the longest sleeve in the outline. Pose affects this.');
     const c = source.medianColor;
     p.baseColor = c;

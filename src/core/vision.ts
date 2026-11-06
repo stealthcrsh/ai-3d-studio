@@ -6,6 +6,8 @@ export interface RGBAImage {
 
 /** Upload limits. Header dimensions are read before decoding to block decompression bombs. */
 export const MAX_PIXELS = 40_000_000;
+/** Hem width as a share of body width, matching the share providers.ts uses when it infers hemWidth. */
+export const HEM_TO_BODY = 0.83;
 
 export type Sniffed = 'png' | 'jpeg' | 'webp' | 'gif' | 'glb' | 'pdf' | 'mp4' | 'text' | 'obj' | 'unknown';
 
@@ -303,8 +305,19 @@ export function analyzeGarmentImage(source: RGBAImage): ImageAnalysis {
   const torsoRows: { l: number; r: number; w: number }[] = [];
   for (let k = 0.08; k < 0.42; k += 0.02) torsoRows.push(runAt(Math.floor(yHem - hH * k)));
   const widths = torsoRows.map((r) => r.w).filter((v) => v > 0);
-  const torsoW = Math.max(1, percentile(widths, 0.3));
-  const torsoRow = torsoRows.reduce((a, b) => (Math.abs(b.w - torsoW) < Math.abs(a.w - torsoW) ? b : a), torsoRows[0]);
+  let torsoW = Math.max(1, percentile(widths, 0.3));
+  let torsoRow = torsoRows.reduce((a, b) => (Math.abs(b.w - torsoW) < Math.abs(a.w - torsoW) ? b : a), torsoRows[0]);
+  // Arms resting against the body merge with the torso, so every torso row is arm to arm. The hem band below the
+  // cuffs is then the only clean width, and body width is scaled up from it by the template's hem share.
+  const bottom = runAt(maxY - Math.max(2, Math.round(hH * 0.01)));
+  const armsMerged = bottom.w > 0 && bottom.w < torsoW * 0.7;
+  if (armsMerged) {
+    yHem = maxY;
+    torsoW = Math.round(bottom.w / HEM_TO_BODY);
+    const mid = (bottom.l + bottom.r) / 2;
+    torsoRow = { l: Math.round(mid - torsoW / 2), r: Math.round(mid + torsoW / 2), w: torsoW };
+    warnings.push('The sleeves rest against the body, so chest width was estimated from the hem. Check it in the Garment tab.');
+  }
   // Shoulder: first row from the top whose central run reaches 60% of the torso width.
   let yShoulder = minY;
   for (let y = minY; y < yHem; y++) {
@@ -349,7 +362,7 @@ export function analyzeGarmentImage(source: RGBAImage): ImageAnalysis {
   const ratio = { widthToLength: torsoW / lengthPx, sleeveToLength: sleevePx / lengthPx, hoodToLength: hoodPx / lengthPx };
   const edgeTouch = minX <= 1 || maxX >= w - 2 || minY <= 1 || maxY >= h - 2;
   if (edgeTouch) warnings.push('The garment touches the image edge and may be cropped.');
-  let confidence = 0.35 + uniformity * 0.35 + (hoodDetected ? 0.1 : 0) + (sleevePx > lengthPx * 0.25 ? 0.1 : 0) + (edgeTouch ? -0.2 : 0.05);
+  let confidence = 0.35 + uniformity * 0.35 + (hoodDetected ? 0.1 : 0) + (sleevePx > lengthPx * 0.25 ? 0.1 : 0) + (edgeTouch ? -0.2 : 0.05) - (armsMerged ? 0.15 : 0);
   confidence = Math.max(0.05, Math.min(0.9, confidence));
   return {
     ok: true,

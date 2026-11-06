@@ -9,5 +9,6 @@ Ground truth for silhouette tests:
 | hoodie_front.png | 0.92 | 0.85 |
 | hoodie_patterned_front.png | 0.84 | 0.90 |
 | hoodie_print_front.png | 1.02 | 0.78 |
+| hoodie_arms_down_front.png | 0.95 | not tested, sleeves hang flush |
 
 These prove the measurement code and failure paths work. They are not evidence of accuracy on real photographs.
