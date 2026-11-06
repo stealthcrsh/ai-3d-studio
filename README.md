@@ -89,7 +89,7 @@ Layout:
 | `src/core` | Geometry, avatar, cloth solver, GLB and OBJ writers, image analysis, edits, checks. No platform code |
 | `src/engine` | Projects, durable jobs, pipeline stages, validators, provider contract |
 | `src/web` | React UI, three.js viewport, browser platform (IndexedDB, Workers, canvas) |
-| `tests` | 58 tests that run the same engine headless in Bun |
+| `tests` | 63 tests that run the same engine headless in Bun |
 | `fixtures` | Synthetic test images with known proportions, and deliberately bad files |
 | `examples` | Sample exports and validation reports |
 | `docs` | Specification, decisions, architecture, quality evidence, risks, research |

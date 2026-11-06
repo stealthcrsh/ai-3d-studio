@@ -4,7 +4,7 @@
 
 ## Automated tests
 
-`bun run test`: **58 pass, 0 fail.** They run the same engine as the browser, with stand-ins for IndexedDB, Workers and canvas.
+`bun run test`: **63 pass, 0 fail.** They run the same engine as the browser, with stand-ins for IndexedDB, Workers and canvas.
 
 ## Real browser run
 
